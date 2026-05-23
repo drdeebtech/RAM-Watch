@@ -1124,6 +1124,8 @@ function updateTable(procs) {
     }
   }
 
+  if (rowMap.size === 0) tbody.innerHTML = ''; // clear placeholder on first render
+
   procs.forEach((p, idx) => {
     let tr = rowMap.get(p.pid);
     const barPct = Math.min(100, p.ram_mb / maxRAM * 100).toFixed(1);
