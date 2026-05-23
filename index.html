@@ -26,7 +26,8 @@
 
   --safe-kill:     oklch(62%   0.22  22);
   --auto-restart:  oklch(73%   0.17  58);
-  --system:        oklch(68%   0.18 145);
+  --system:        oklch(68%   0.18 145);  /* green: used for pressure-normal + conn-dot only */
+  --neutral:       oklch(52%   0.008 245); /* muted: system badge — not actionable */
   --active:        oklch(60%   0.22 238);
   --wired:         oklch(57%   0.20 282);
   --compressed:    oklch(64%   0.20  44);
@@ -52,6 +53,7 @@
   --safe-kill:     oklch(48%   0.22  22);
   --auto-restart:  oklch(52%   0.18  58);
   --system:        oklch(42%   0.18 145);
+  --neutral:       oklch(46%   0.006 245);
   --active:        oklch(46%   0.22 238);
   --wired:         oklch(43%   0.20 282);
   --compressed:    oklch(50%   0.20  44);
@@ -289,30 +291,69 @@ header {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: stretch;
+  gap: 10px;
   align-self: center;
+  min-width: 148px;
 }
 
+/* Batch kill — solid fill when active, recedes when disabled */
 .btn-batch {
-  background: color-mix(in oklch, var(--safe-kill) 11%, transparent);
-  color: var(--safe-kill);
-  border: 1px solid color-mix(in oklch, var(--safe-kill) 32%, transparent);
-  padding: 7px 15px;
-  border-radius: 8px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
+  background: var(--safe-kill);
+  color: oklch(97% 0.006 22);
+  border: none;
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   transition: background 150ms, opacity 150ms;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .btn-batch:hover:not(:disabled) {
-  background: color-mix(in oklch, var(--safe-kill) 20%, transparent);
+  background: oklch(66% 0.22 22);
 }
 
-.btn-batch:disabled { opacity: 0.32; cursor: not-allowed; }
+.btn-batch:disabled {
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  cursor: not-allowed;
+}
+
+.btn-batch kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: oklch(55% 0.22 22 / 0.35);
+  color: oklch(92% 0.006 22);
+  border: 1px solid oklch(52% 0.20 22 / 0.4);
+}
+
+.btn-batch:disabled kbd {
+  background: color-mix(in oklch, var(--text-faint) 10%, transparent);
+  color: var(--text-faint);
+  border-color: var(--border);
+}
+
+/* Theme toggle + conn status sit together, separated from batch kill */
+.header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
 .theme-btn {
   width: 30px;
@@ -327,9 +368,16 @@ header {
   justify-content: center;
   padding: 0;
   transition: background 150ms, border-color 150ms, color 150ms;
+  flex-shrink: 0;
 }
 
 .theme-btn:hover { color: var(--text); }
+
+/* Focus rings for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--active);
+  outline-offset: 2px;
+}
 
 .conn-status {
   display: flex;
@@ -346,6 +394,7 @@ header {
   border-radius: 50%;
   background: var(--system);
   transition: background 300ms;
+  flex-shrink: 0;
 }
 .conn-dot.warn  { background: var(--auto-restart); }
 .conn-dot.error { background: var(--safe-kill); }
@@ -371,7 +420,7 @@ thead th {
   color: var(--text-dim);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
-  background: oklch(from var(--surface) calc(l - 0.015) c h);
+  background: var(--surface-hi);
 }
 
 tbody tr {
@@ -407,7 +456,7 @@ td {
 
 .meta-sep { margin: 0 4px; color: var(--text-faint); }
 
-.col-actions { min-width: 130px; }
+.col-actions { min-width: 160px; }
 
 /* RAM bar */
 .ram-bar-wrap { display: flex; align-items: center; gap: 8px; }
@@ -446,9 +495,11 @@ td {
   text-transform: uppercase;
 }
 
+/* /colorize fix: system badge uses --neutral (muted), not green.
+   Green (--system) is reserved for pressure-normal and conn-dot. */
 .badge-safe    { background: color-mix(in oklch, var(--safe-kill)    14%, transparent); color: var(--safe-kill); }
 .badge-restart { background: color-mix(in oklch, var(--auto-restart) 14%, transparent); color: var(--auto-restart); }
-.badge-system  { background: color-mix(in oklch, var(--system)       12%, transparent); color: var(--system); }
+.badge-system  { background: color-mix(in oklch, var(--neutral)      14%, transparent); color: var(--neutral); }
 
 /* Action buttons */
 .btn {
@@ -501,13 +552,13 @@ td {
 }
 .row-flash { animation: row-flash 320ms ease; }
 
-/* ── Toast ── */
+/* ── Toast — top-right, near batch kill button ── */
 #toast-container {
   position: fixed;
-  bottom: 20px;
+  top: 20px;
   right: 20px;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 8px;
   z-index: 999;
   pointer-events: none;
@@ -538,7 +589,9 @@ td {
   <div class="gauge-block">
     <span class="wordmark">RAM Watch</span>
     <div class="gauge-wrap">
-      <canvas id="gauge-canvas" width="190" height="190"></canvas>
+      <!-- role+aria-label updated each SSE tick with full segment breakdown -->
+      <canvas id="gauge-canvas" width="190" height="190"
+              role="img" aria-label="Memory gauge: loading"></canvas>
       <div class="gauge-center">
         <span id="gauge-pct">—</span>
         <span class="gauge-unit">used</span>
@@ -585,19 +638,22 @@ td {
   </div>
 
   <div class="header-right">
+    <!-- Primary action: solid fill, full-width, F shortcut -->
     <button id="batch-kill-btn" class="btn-batch" onclick="batchKill()" disabled
-            aria-label="Kill all safe-to-kill processes">
-      Free <span id="batch-gb">—</span> GB
+            aria-label="Kill all safe-to-kill processes (F)">
+      Free <span id="batch-gb">—</span> GB <kbd>F</kbd>
     </button>
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
-      <svg id="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
-    </button>
-    <div class="conn-status" aria-live="polite" aria-atomic="true">
-      <span class="conn-dot" id="conn-dot"></span>
-      <span id="conn-label">—</span>
+    <div class="header-controls">
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg id="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <div class="conn-status" aria-live="polite" aria-atomic="true">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span id="conn-label">—</span>
+      </div>
     </div>
   </div>
 </header>
@@ -627,7 +683,8 @@ td {
 
 <script>
 // ── Theme ──────────────────────────────────────────────────────────────────
-const html = document.documentElement;
+const html   = document.documentElement;
+const gaugeCanvas = document.getElementById('gauge-canvas');
 
 const MOON = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
 const SUN  = `<circle cx="12" cy="12" r="5"/>
@@ -685,8 +742,7 @@ function toggleTheme() {
 })();
 
 // ── Three.js gauge ─────────────────────────────────────────────────────────
-const canvas   = document.getElementById('gauge-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas: gaugeCanvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(190, 190);
 
@@ -774,8 +830,7 @@ function animateGauge(next) {
 }
 
 // ── SSE + reconnect ─────────────────────────────────────────────────────────
-let maxRAM      = 1;
-let firstLoad   = true;
+let firstLoad     = true;
 let killableProcs = [];
 
 const tbody   = document.getElementById('proc-body');
@@ -836,6 +891,14 @@ function updateHeader(data) {
   const pct = data.total_gb > 0 ? Math.round(data.used_gb / data.total_gb * 100) : 0;
   document.getElementById('gauge-pct').textContent = pct + '%';
 
+  // /audit: update canvas aria-label with full segment breakdown
+  gaugeCanvas.setAttribute('aria-label',
+    `Memory gauge: ${pct}% used — Active ${fmt1(data.active_gb || 0)} GB, ` +
+    `Wired ${fmt1(data.wired_gb || 0)} GB, ` +
+    `Compressed ${fmt1(data.compressed_gb || 0)} GB, ` +
+    `Free ${fmt1(data.free_gb || 0)} GB`);
+
+  // Color hero Used number by pressure level
   const usedRow = document.getElementById('s-used-row');
   usedRow.style.color = pStr.includes('critical') ? 'var(--safe-kill)' :
                         pStr.includes('warn')     ? 'var(--auto-restart)' : '';
@@ -852,7 +915,8 @@ function updateHeader(data) {
 // ── Table ────────────────────────────────────────────────────────────────────
 function badgeFor(sc) {
   if (sc === 'safe-to-kill') return '<span class="badge badge-safe">Safe</span>';
-  if (sc === 'auto-restart') return '<span class="badge badge-restart">Restarts</span>';
+  // /clarify: "Auto-restart" with tooltip explaining the behavior
+  if (sc === 'auto-restart') return '<span class="badge badge-restart" title="Claude will restart this automatically">Auto-restart</span>';
   return '<span class="badge badge-system">System</span>';
 }
 
@@ -867,7 +931,7 @@ function actionsFor(p) {
 
 function updateTable(procs) {
   killableProcs = procs.filter(p => p.safety_class === 'safe-to-kill');
-  const freeableGB = killableProcs.reduce((s, p) => s + p.ram_mb, 0) / 1024;
+  const freeableGB  = killableProcs.reduce((s, p) => s + p.ram_mb, 0) / 1024;
   const hasKillable = killableProcs.length > 0;
 
   const freeableRow = document.getElementById('s-freeable-row');
@@ -884,8 +948,9 @@ function updateTable(procs) {
     return;
   }
 
-  maxRAM = Math.max(maxRAM, ...procs.map(p => p.ram_mb));
-  const seen = new Set(procs.map(p => p.pid));
+  // /clarify: recalculate maxRAM from current tick — bars re-normalize after kills
+  const maxRAM = procs.length > 0 ? Math.max(...procs.map(p => p.ram_mb)) : 1;
+  const seen   = new Set(procs.map(p => p.pid));
 
   for (const [pid, tr] of rowMap) {
     if (!seen.has(pid)) {
@@ -942,16 +1007,25 @@ async function killProc(pid, btn) {
 
   tr.classList.add('row-flash');
   setTimeout(() => tr.classList.remove('row-flash'), 340);
-
   await new Promise(r => setTimeout(r, 160));
 
   try {
     const res = await fetch(`/api/kill/${pid}`, { method: 'POST' });
     if (res.ok) {
+      // /audit: move focus to next row's kill button or batch kill before removing
+      const allRows    = [...tbody.querySelectorAll('tr:not([data-killing])')];
+      const currentIdx = allRows.indexOf(tr);
+      const nextFocus  = allRows[currentIdx + 1]?.querySelector('.btn') ||
+                         allRows[currentIdx - 1]?.querySelector('.btn') ||
+                         document.getElementById('batch-kill-btn');
+
       rowMap.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -20, duration: 0.26, ease: 'power2.in',
-        onComplete: () => tr.remove(),
+        onComplete: () => {
+          tr.remove();
+          nextFocus?.focus();
+        },
       });
       showToast(`Killed ${name}`);
     } else {
@@ -1025,6 +1099,7 @@ async function batchKill() {
   }));
 
   if (killed > 0) showToast(`Freed ~${totalGB} GB — killed ${killed} process${killed !== 1 ? 'es' : ''}`);
+  else showToast('No processes could be killed', 2500);
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -1034,14 +1109,27 @@ function showToast(msg, duration = 2800) {
   toast.className = 'toast';
   toast.textContent = msg;
   container.appendChild(toast);
-  gsap.fromTo(toast, { opacity: 0, y: 6 }, {
+  gsap.fromTo(toast, { opacity: 0, y: -6 }, {
     opacity: 1, y: 0, duration: 0.22, ease: 'power2.out',
     onComplete: () => setTimeout(() => {
-      gsap.to(toast, { opacity: 0, y: 4, duration: 0.18, ease: 'power2.in',
+      gsap.to(toast, { opacity: 0, y: -4, duration: 0.18, ease: 'power2.in',
         onComplete: () => toast.remove() });
     }, duration),
   });
 }
+
+// ── Keyboard shortcut: F = batch kill ────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'f' || e.key === 'F') {
+    const btn = document.getElementById('batch-kill-btn');
+    if (!btn.disabled) {
+      gsap.fromTo(btn, { scale: 0.95 }, { scale: 1, duration: 0.28, ease: 'back.out(1.4)' });
+      batchKill();
+    }
+  }
+});
 
 // ── Button press spring ───────────────────────────────────────────────────────
 document.addEventListener('mousedown', e => {
