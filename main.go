@@ -43,7 +43,7 @@ func (o *OSStatsProvider) MemStats() (MemStats, string, error) {
 }
 
 func (o *OSStatsProvider) Processes() ([]Process, error) {
-	out, err := exec.Command("ps", "-axm", "-o", "rss,pid,etime,comm,args").Output()
+	out, err := exec.Command("ps", "-axm", "-o", "rss,pid,ppid,etime,comm,args").Output()
 	if err != nil {
 		return nil, fmt.Errorf("ps: %w", err)
 	}

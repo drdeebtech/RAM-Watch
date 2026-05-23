@@ -493,10 +493,53 @@ tbody tr {
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--row-hover); }
 
-/* Safety left-edge indicator */
+/* Safety left-edge indicator (members only — group rows have their own treatment) */
 tbody tr[data-safety="safe-to-kill"] td:first-child { box-shadow: inset 2px 0 0 var(--safe-kill); }
 tbody tr[data-safety="auto-restart"]  td:first-child { box-shadow: inset 2px 0 0 var(--auto-restart); }
 tbody tr[data-safety="system"]        td:first-child { box-shadow: inset 2px 0 0 var(--border); }
+
+/* Group header rows */
+tbody tr.group-row {
+  background: var(--surface-hi);
+  border-top: 1px solid var(--border);
+}
+tbody tr.group-row:hover { background: var(--surface-hi); }
+tbody tr.group-row td { padding: 12px 14px; }
+tbody tr.group-row[data-group-safety="safe-to-kill"] td:first-child { box-shadow: inset 3px 0 0 var(--safe-kill); }
+tbody tr.group-row[data-group-safety="auto-restart"]  td:first-child { box-shadow: inset 3px 0 0 var(--auto-restart); }
+tbody tr.group-row[data-group-safety="system"]        td:first-child { box-shadow: inset 3px 0 0 var(--text-dim); }
+
+.group-name-cell { display: flex; align-items: center; gap: 12px; max-width: none; }
+.group-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text); font: 600 14px var(--font-display);
+  padding: 0; letter-spacing: -0.005em;
+}
+.group-toggle:hover .group-label { color: var(--active); }
+.group-toggle:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; border-radius: 4px; }
+.group-arrow { font-size: 9px; color: var(--text-dim); display: inline-block; width: 10px; }
+.group-label { font-weight: 600; }
+.group-count { font-size: 11px; color: var(--text-dim); font-feature-settings: 'tnum'; letter-spacing: 0.02em; }
+.group-total { font-weight: 600; }
+
+.btn-kill-group {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 11px;
+  font: 500 12px var(--font-display);
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 32px;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.btn-kill-group:hover { background: var(--safe-kill); color: var(--safe-kill-text); border-color: var(--safe-kill); }
+.btn-kill-group:active { transform: scale(0.97); }
+.btn-kill-group:focus-visible { outline: 2px solid var(--safe-kill); outline-offset: 2px; }
+
+/* Member rows: subtle indent under their group */
+tbody tr[data-member-of] td.col-name { padding-left: 32px; }
 
 td { padding: 10px 14px; vertical-align: middle; }
 
@@ -979,6 +1022,9 @@ let killableProcs = [];
 const tbody    = document.getElementById('proc-body');
 const rowMap   = new Map(); // pid → <tr>
 const rowDataMap = new Map(); // pid → 'name|safetyClass' for change detection
+const groupRowMap   = new Map(); // groupName → <tr> (group header rows)
+const groupDataMap  = new Map(); // groupName → 'totalMB|count|safety' for diffing
+const groupExpanded = new Map(); // groupName → bool (default: top 5 expanded)
 const connDot  = document.getElementById('conn-dot');
 const connLbl  = document.getElementById('conn-label');
 
@@ -994,7 +1040,7 @@ function connectSSE() {
   sse.onmessage = e => {
     const data = JSON.parse(e.data);
     updateHeader(data);
-    updateTable(data.processes || []);
+    updateTable(data.groups || []);
   };
   sse.onerror = () => {
     setConnState('error');
@@ -1091,31 +1137,77 @@ function buildRowHTML(p, barPct) {
     <td class="col-actions">${actionsFor(p)}</td>`;
 }
 
-function updateTable(procs) {
-  killableProcs = procs.filter(p => p.safety_class === 'safe-to-kill');
+function fmtSize(mb) {
+  return mb >= 1024 ? fmt1(mb / 1024) + ' GB' : Math.round(mb) + ' MB';
+}
+
+function buildGroupRowHTML(g, expanded) {
+  const hasKillable = g.safety_class !== 'system';
+  const count = g.members.length;
+  const arrow = expanded ? '▼' : '▶';
+  const killBtn = hasKillable
+    ? `<button class="btn btn-kill-group" data-group-kill="${esc(g.name)}" aria-label="Kill killable members of ${esc(g.name)}">Kill Group</button>`
+    : '';
+  return `
+    <td class="col-name group-name-cell">
+      <button class="group-toggle" data-group-toggle="${esc(g.name)}" aria-expanded="${expanded}" aria-label="${expanded ? 'Collapse' : 'Expand'} ${esc(g.name)} group">
+        <span class="group-arrow">${arrow}</span>
+        <span class="group-label">${esc(g.name)}</span>
+      </button>
+      <span class="group-count">${count} process${count !== 1 ? 'es' : ''}</span>
+    </td>
+    <td class="col-ram"><span class="ram-label group-total">${fmtSize(g.total_mb)}</span></td>
+    <td class="col-meta">—</td>
+    <td>${badgeFor(g.safety_class)}</td>
+    <td class="col-actions">${killBtn}</td>`;
+}
+
+function updateTable(groups) {
+  // Flatten all members for killable stats
+  const allMembers = [];
+  groups.forEach(g => g.members.forEach(p => allMembers.push(p)));
+  killableProcs = allMembers.filter(p => p.safety_class === 'safe-to-kill');
   const freeableGB  = killableProcs.reduce((s, p) => s + p.ram_mb, 0) / 1024;
-  const hasKillable = killableProcs.length > 0;
+  const hasFreeable = killableProcs.length > 0;
 
   const freeableRow = document.getElementById('s-freeable-row');
-  document.getElementById('s-freeable-num').textContent = hasKillable ? fmt1(freeableGB) : '—';
-  freeableRow.classList.toggle('none', !hasKillable);
+  document.getElementById('s-freeable-num').textContent = hasFreeable ? fmt1(freeableGB) : '—';
+  freeableRow.classList.toggle('none', !hasFreeable);
 
   const batchBtn = document.getElementById('batch-kill-btn');
-  document.getElementById('batch-gb').textContent = hasKillable ? fmt1(freeableGB) : '—';
-  batchBtn.disabled = !hasKillable;
+  document.getElementById('batch-gb').textContent = hasFreeable ? fmt1(freeableGB) : '—';
+  batchBtn.disabled = !hasFreeable;
 
-  if (!procs.length) {
+  if (!groups.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No processes found.</td></tr>';
-    rowMap.clear();
-    rowDataMap.clear();
+    rowMap.clear(); rowDataMap.clear(); groupRowMap.clear(); groupDataMap.clear();
     return;
   }
 
-  const maxRAM = procs.length > 0 ? Math.max(...procs.map(p => p.ram_mb)) : 1;
-  const seen   = new Set(procs.map(p => p.pid));
+  // Set default expansion: top 5 groups by RAM expanded, rest collapsed
+  groups.forEach((g, i) => {
+    if (!groupExpanded.has(g.name)) {
+      groupExpanded.set(g.name, i < 5);
+    }
+  });
 
+  const seenGroups = new Set(groups.map(g => g.name));
+  const seenPIDs   = new Set();
+  groups.forEach(g => g.members.forEach(p => seenPIDs.add(p.pid)));
+
+  // Remove disappeared group rows
+  for (const [name, tr] of groupRowMap) {
+    if (!seenGroups.has(name)) {
+      groupRowMap.delete(name);
+      groupDataMap.delete(name);
+      groupExpanded.delete(name);
+      tr.remove();
+    }
+  }
+
+  // Remove disappeared member rows (with slide-out animation)
   for (const [pid, tr] of rowMap) {
-    if (!seen.has(pid)) {
+    if (!seenPIDs.has(pid)) {
       rowDataMap.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -18, duration: 0.26, ease: 'power2.in',
@@ -1124,47 +1216,161 @@ function updateTable(procs) {
     }
   }
 
-  if (rowMap.size === 0) tbody.innerHTML = ''; // clear placeholder on first render
+  // Clear placeholder on first render
+  if (rowMap.size === 0 && groupRowMap.size === 0) tbody.innerHTML = '';
 
-  procs.forEach((p, idx) => {
-    let tr = rowMap.get(p.pid);
-    const barPct = Math.min(100, p.ram_mb / maxRAM * 100).toFixed(1);
+  let memberIdx = 0;
+  groups.forEach(g => {
+    const expanded = groupExpanded.get(g.name) !== false;
 
-    if (!tr) {
-      tr = document.createElement('tr');
-      tr.dataset.pid = p.pid;
-      tbody.appendChild(tr);
-      rowMap.set(p.pid, tr);
-      rowDataMap.set(p.pid, null); // force initial full render
+    // Group header row
+    let groupTr = groupRowMap.get(g.name);
+    if (!groupTr) {
+      groupTr = document.createElement('tr');
+      groupTr.className = 'group-row';
+      groupTr.dataset.groupName = g.name;
+      tbody.appendChild(groupTr);
+      groupRowMap.set(g.name, groupTr);
+      groupDataMap.set(g.name, null);
       if (firstLoad) {
-        tr.style.opacity = '0';
-        gsap.to(tr, { opacity: 1, duration: 0.24, delay: idx * 0.02, ease: 'power2.out' });
-      } else {
-        gsap.fromTo(tr, { opacity: 0, x: 8 }, { opacity: 1, x: 0, duration: 0.24, ease: 'power2.out' });
+        groupTr.style.opacity = '0';
+        gsap.to(groupTr, { opacity: 1, duration: 0.2, ease: 'power2.out' });
       }
-    }
-
-    if (tr.dataset.killing) return;
-
-    // Only rebuild full innerHTML when structurally significant fields change
-    const key = `${p.name}|${p.safety_class}`;
-    if (rowDataMap.get(p.pid) !== key) {
-      rowDataMap.set(p.pid, key);
-      tr.dataset.safety = p.safety_class;
-      tr.innerHTML = buildRowHTML(p, barPct);
     } else {
-      // Targeted update of dynamic cells only — avoids DOM churn on every tick
-      const barFill  = tr.querySelector('.ram-bar-fill');
-      const ramLabel = tr.querySelector('.ram-label');
-      const metaCell = tr.querySelector('.col-meta');
-      if (barFill)  barFill.style.width = barPct + '%';
-      if (ramLabel) ramLabel.textContent = Math.round(p.ram_mb) + ' MB';
-      if (metaCell) metaCell.innerHTML = `${fmtAge(p.age_secs)}<span class="meta-sep">·</span>${p.pid}`;
+      // Re-append to maintain order if group ordering changed
+      tbody.appendChild(groupTr);
     }
+
+    // Diff group header content
+    const groupKey = `${Math.round(g.total_mb)}|${g.members.length}|${g.safety_class}|${expanded}`;
+    if (groupDataMap.get(g.name) !== groupKey) {
+      groupDataMap.set(g.name, groupKey);
+      groupTr.dataset.groupSafety = g.safety_class;
+      groupTr.innerHTML = buildGroupRowHTML(g, expanded);
+    }
+
+    // Member rows
+    const maxRAM = g.members.length > 0 ? Math.max(...g.members.map(p => p.ram_mb)) : 1;
+    g.members.forEach(p => {
+      let tr = rowMap.get(p.pid);
+      const barPct = Math.min(100, p.ram_mb / maxRAM * 100).toFixed(1);
+
+      if (!tr) {
+        tr = document.createElement('tr');
+        tr.dataset.pid = p.pid;
+        tr.dataset.memberOf = g.name;
+        tbody.appendChild(tr);
+        rowMap.set(p.pid, tr);
+        rowDataMap.set(p.pid, null);
+        if (!expanded) tr.style.display = 'none';
+        if (firstLoad) {
+          tr.style.opacity = '0';
+          gsap.to(tr, { opacity: 1, duration: 0.22, delay: memberIdx * 0.012, ease: 'power2.out' });
+        } else {
+          gsap.fromTo(tr, { opacity: 0, x: 8 }, { opacity: 1, x: 0, duration: 0.24, ease: 'power2.out' });
+        }
+      } else {
+        // Re-append in correct order under its group; respect collapse
+        tbody.appendChild(tr);
+        tr.style.display = expanded ? '' : 'none';
+        if (tr.dataset.memberOf !== g.name) tr.dataset.memberOf = g.name;
+      }
+
+      memberIdx++;
+
+      if (tr.dataset.killing) return;
+
+      const key = `${p.name}|${p.safety_class}`;
+      if (rowDataMap.get(p.pid) !== key) {
+        rowDataMap.set(p.pid, key);
+        tr.dataset.safety = p.safety_class;
+        tr.innerHTML = buildRowHTML(p, barPct);
+      } else {
+        const barFill  = tr.querySelector('.ram-bar-fill');
+        const ramLabel = tr.querySelector('.ram-label');
+        const metaCell = tr.querySelector('.col-meta');
+        if (barFill)  barFill.style.width = barPct + '%';
+        if (ramLabel) ramLabel.textContent = Math.round(p.ram_mb) + ' MB';
+        if (metaCell) metaCell.innerHTML = `${fmtAge(p.age_secs)}<span class="meta-sep">·</span>${p.pid}`;
+      }
+    });
   });
 
   if (firstLoad) firstLoad = false;
 }
+
+function toggleGroup(name) {
+  const nowExpanded = !(groupExpanded.get(name) !== false);
+  groupExpanded.set(name, nowExpanded);
+
+  // Toggle visibility of all members in this group
+  for (const [pid, tr] of rowMap) {
+    if (tr.dataset.memberOf === name) {
+      if (nowExpanded) {
+        tr.style.display = '';
+        gsap.fromTo(tr, { opacity: 0 }, { opacity: 1, duration: 0.18, ease: 'power2.out' });
+      } else {
+        tr.style.display = 'none';
+      }
+    }
+  }
+
+  // Update group row arrow + aria
+  const groupTr = groupRowMap.get(name);
+  if (groupTr) {
+    const arrow  = groupTr.querySelector('.group-arrow');
+    const toggle = groupTr.querySelector('.group-toggle');
+    if (arrow)  arrow.textContent = nowExpanded ? '▼' : '▶';
+    if (toggle) toggle.setAttribute('aria-expanded', String(nowExpanded));
+    groupDataMap.set(name, null); // force re-diff next tick
+  }
+}
+
+async function killGroup(name) {
+  const targets = [];
+  for (const [pid, tr] of rowMap) {
+    if (tr.dataset.memberOf === name &&
+        tr.dataset.safety && tr.dataset.safety !== 'system' &&
+        !tr.dataset.killing) {
+      targets.push(pid);
+    }
+  }
+  if (!targets.length) return;
+
+  let killed = 0;
+  await Promise.all(targets.map(async pid => {
+    const tr = rowMap.get(pid);
+    if (!tr) return;
+    tr.dataset.killing = '1';
+    try {
+      const res = await fetch(`/api/kill/${pid}`, { method: 'POST' });
+      if (res.ok) {
+        killed++;
+        rowDataMap.delete(pid);
+        rowMap.delete(pid);
+        gsap.to(tr, {
+          opacity: 0, x: -20, duration: 0.24, ease: 'power2.in',
+          onComplete: () => tr.remove(),
+        });
+      } else {
+        delete tr.dataset.killing;
+      }
+    } catch {
+      delete tr.dataset.killing;
+    }
+  }));
+
+  if (killed > 0) showToast(`Killed ${killed} process${killed !== 1 ? 'es' : ''} from ${name}`);
+  else showToast(`Could not kill any ${name} process`, 2500);
+}
+
+// Event delegation for group toggle + group kill
+tbody.addEventListener('click', e => {
+  const toggle = e.target.closest('[data-group-toggle]');
+  if (toggle) { toggleGroup(toggle.dataset.groupToggle); return; }
+  const killGroupBtn = e.target.closest('[data-group-kill]');
+  if (killGroupBtn) { killGroup(killGroupBtn.dataset.groupKill); }
+});
 
 // ── Kill ─────────────────────────────────────────────────────────────────────
 async function killProc(pid, btn) {

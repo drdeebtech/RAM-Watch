@@ -82,14 +82,23 @@ func TestStreamEndpoint_EmitsValidJSON(t *testing.T) {
 	if err := json.Unmarshal([]byte(jsonPart), &event); err != nil {
 		t.Fatalf("invalid JSON in SSE event: %v\nbody: %q", err, body)
 	}
-	for _, key := range []string{"used_gb", "free_gb", "total_gb", "pressure", "processes"} {
+	for _, key := range []string{"used_gb", "free_gb", "total_gb", "pressure", "groups"} {
 		if _, ok := event[key]; !ok {
 			t.Errorf("SSE event missing field %q", key)
 		}
 	}
-	procs, ok := event["processes"].([]interface{})
-	if !ok || len(procs) != 4 {
-		t.Errorf("expected 3 processes, got %v", event["processes"])
+	groups, ok := event["groups"].([]interface{})
+	if !ok || len(groups) == 0 {
+		t.Errorf("expected non-empty groups, got %v", event["groups"])
+	}
+	// Total members across all groups should equal input process count
+	totalMembers := 0
+	for _, g := range groups {
+		members := g.(map[string]interface{})["members"].([]interface{})
+		totalMembers += len(members)
+	}
+	if totalMembers != 4 {
+		t.Errorf("expected 4 members across all groups, got %d", totalMembers)
 	}
 }
 
@@ -206,7 +215,7 @@ func TestRestartChroma_WorksAfterChromaKilled(t *testing.T) {
 	}
 }
 
-func TestSSEEvent_ProcessesSortedByRAMDescending(t *testing.T) {
+func TestSSEEvent_GroupsSortedByRAMDescending(t *testing.T) {
 	unsorted := &fakeStats{
 		mem:      MemStats{UsedGB: 8.0, FreeGB: 2.0, TotalGB: 16.0},
 		pressure: "Normal",
@@ -226,12 +235,12 @@ func TestSSEEvent_ProcessesSortedByRAMDescending(t *testing.T) {
 	var event map[string]interface{}
 	json.Unmarshal([]byte(jsonPart), &event)
 
-	procs := event["processes"].([]interface{})
-	first := procs[0].(map[string]interface{})["name"].(string)
-	last := procs[len(procs)-1].(map[string]interface{})["name"].(string)
+	groups := event["groups"].([]interface{})
+	first := groups[0].(map[string]interface{})["name"].(string)
+	last := groups[len(groups)-1].(map[string]interface{})["name"].(string)
 
 	if first != "large" || last != "small" {
-		t.Errorf("want order [large, medium, small], got first=%q last=%q", first, last)
+		t.Errorf("want group order [large, medium, small], got first=%q last=%q", first, last)
 	}
 }
 

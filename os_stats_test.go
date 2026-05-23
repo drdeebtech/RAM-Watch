@@ -2,12 +2,12 @@ package main
 
 import "testing"
 
-// Sample output from: ps -axm -o rss,pid,etime,comm,args
-const samplePS = `  RSS   PID     ELAPSED COMM            ARGS
-104448   123    01:23:45 claude          /home/.claude/versions/1.0/claude bg-spare
- 51200   456    00:05:00 npm             node /usr/bin/npm exec @mcp/server
-204800   789  3-02:15:30 kernel_task     kernel_task
- 81920   101    00:30:00 uvx             /usr/local/bin/uvx chroma-mcp --host 0.0.0.0
+// Sample output from: ps -axm -o rss,pid,ppid,etime,comm,args
+const samplePS = `  RSS   PID  PPID     ELAPSED COMM            ARGS
+104448   123     1    01:23:45 claude          /home/.claude/versions/1.0/claude bg-spare
+ 51200   456   123    00:05:00 npm             node /usr/bin/npm exec @mcp/server
+204800   789     0  3-02:15:30 kernel_task     kernel_task
+ 81920   101     1    00:30:00 uvx             /usr/local/bin/uvx chroma-mcp --host 0.0.0.0
 `
 
 func TestParseProcessList_Count(t *testing.T) {
@@ -30,6 +30,17 @@ func TestParseProcessList_PIDParsed(t *testing.T) {
 	procs := ParseProcessList(samplePS)
 	if procs[0].PID != 123 {
 		t.Errorf("PID: want 123, got %d", procs[0].PID)
+	}
+}
+
+func TestParseProcessList_PPIDParsed(t *testing.T) {
+	procs := ParseProcessList(samplePS)
+	// row 1 (npm) has PPID 123 → child of claude
+	if procs[1].PPID != 123 {
+		t.Errorf("PPID: want 123, got %d", procs[1].PPID)
+	}
+	if procs[0].PPID != 1 {
+		t.Errorf("PPID for row 0: want 1, got %d", procs[0].PPID)
 	}
 }
 

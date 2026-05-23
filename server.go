@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -21,14 +20,14 @@ func NewServer(stats StatsProvider, killer ProcessKiller, restarter ProcessResta
 }
 
 type streamEvent struct {
-	UsedGB       float64      `json:"used_gb"`
-	FreeGB       float64      `json:"free_gb"`
-	TotalGB      float64      `json:"total_gb"`
-	ActiveGB     float64      `json:"active_gb"`
-	WiredGB      float64      `json:"wired_gb"`
-	CompressedGB float64      `json:"compressed_gb"`
-	Pressure     string       `json:"pressure"`
-	Processes    []processDTO `json:"processes"`
+	UsedGB       float64           `json:"used_gb"`
+	FreeGB       float64           `json:"free_gb"`
+	TotalGB      float64           `json:"total_gb"`
+	ActiveGB     float64           `json:"active_gb"`
+	WiredGB      float64           `json:"wired_gb"`
+	CompressedGB float64           `json:"compressed_gb"`
+	Pressure     string            `json:"pressure"`
+	Groups       []processGroupDTO `json:"groups"`
 }
 
 type processDTO struct {
@@ -38,6 +37,13 @@ type processDTO struct {
 	CPUPercent  float64 `json:"cpu_pct"`
 	AgeSecs     int64   `json:"age_secs"`
 	SafetyClass string  `json:"safety_class"`
+}
+
+type processGroupDTO struct {
+	Name        string       `json:"name"`
+	TotalMB     float64      `json:"total_mb"`
+	SafetyClass string       `json:"safety_class"`
+	Members     []processDTO `json:"members"`
 }
 
 func safetyLabel(sc SafetyClass) string {
@@ -60,24 +66,35 @@ func (s *Server) buildEvent() (*streamEvent, error) {
 	if err != nil {
 		return nil, err
 	}
-	sort.Slice(procs, func(i, j int) bool {
-		return procs[i].RSSBytes > procs[j].RSSBytes
-	})
 
-	dtos := make([]processDTO, len(procs))
-	for i, p := range procs {
+	for _, p := range procs {
 		if strings.Contains(p.Command, "chroma-mcp") && p.Command != "" {
 			s.chromaCommand = p.Command
 		}
-		dtos[i] = processDTO{
-			PID:         p.PID,
-			Name:        p.Name,
-			RAMMB:       float64(p.RSSBytes) / (1024 * 1024),
-			CPUPercent:  p.CPUPercent,
-			AgeSecs:     p.AgeSecs,
-			SafetyClass: safetyLabel(p.SafetyClass),
+	}
+
+	groups := GroupProcesses(procs)
+	groupDTOs := make([]processGroupDTO, len(groups))
+	for i, g := range groups {
+		members := make([]processDTO, len(g.Members))
+		for j, p := range g.Members {
+			members[j] = processDTO{
+				PID:         p.PID,
+				Name:        p.Name,
+				RAMMB:       float64(p.RSSBytes) / (1024 * 1024),
+				CPUPercent:  p.CPUPercent,
+				AgeSecs:     p.AgeSecs,
+				SafetyClass: safetyLabel(p.SafetyClass),
+			}
+		}
+		groupDTOs[i] = processGroupDTO{
+			Name:        g.Name,
+			TotalMB:     float64(g.TotalRSSBytes) / (1024 * 1024),
+			SafetyClass: safetyLabel(g.SafetyClass),
+			Members:     members,
 		}
 	}
+
 	return &streamEvent{
 		UsedGB:       mem.UsedGB,
 		FreeGB:       mem.FreeGB,
@@ -86,7 +103,7 @@ func (s *Server) buildEvent() (*streamEvent, error) {
 		WiredGB:      mem.WiredGB,
 		CompressedGB: mem.CompressedGB,
 		Pressure:     pressure,
-		Processes:    dtos,
+		Groups:       groupDTOs,
 	}, nil
 }
 

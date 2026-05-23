@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// ParseProcessList parses output from: ps -axm -o rss,pid,etime,comm,args
+// ParseProcessList parses output from: ps -axm -o rss,pid,ppid,etime,comm,args
 func ParseProcessList(psOutput string) []Process {
 	var procs []Process
 	scanner := bufio.NewScanner(strings.NewReader(psOutput))
@@ -23,7 +23,7 @@ func ParseProcessList(psOutput string) []Process {
 			continue
 		}
 		fields := strings.Fields(line)
-		if len(fields) < 4 {
+		if len(fields) < 5 {
 			continue
 		}
 		rssKB, err := strconv.ParseInt(fields[0], 10, 64)
@@ -34,19 +34,21 @@ func ParseProcessList(psOutput string) []Process {
 		if err != nil {
 			continue
 		}
-		elapsed := fields[2]
+		ppid, _ := strconv.Atoi(fields[2])
+		elapsed := fields[3]
 		command := ""
-		if len(fields) >= 5 {
-			command = strings.Join(fields[4:], " ")
+		if len(fields) >= 6 {
+			command = strings.Join(fields[5:], " ")
 		}
 		// use basename of the first args token for the name (comm truncates at 16 chars)
-		name := filepath.Base(fields[3])
-		if len(fields) >= 5 {
-			name = filepath.Base(fields[4])
+		name := filepath.Base(fields[4])
+		if len(fields) >= 6 {
+			name = filepath.Base(fields[5])
 		}
 
 		procs = append(procs, Process{
 			PID:         pid,
+			PPID:        ppid,
 			Name:        name,
 			Command:     command,
 			RSSBytes:    rssKB * 1024,

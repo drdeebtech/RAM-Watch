@@ -4,6 +4,7 @@ import "strings"
 
 type Process struct {
 	PID         int
+	PPID        int
 	Name        string
 	Command     string
 	RSSBytes    int64
