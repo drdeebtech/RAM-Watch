@@ -6,61 +6,62 @@
 <title>RAM Watch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230d1020'/><path d='M6 22 A12 12 0 0 1 26 22' fill='none' stroke='%23223' stroke-width='3.5' stroke-linecap='round'/><path d='M6 22 A12 12 0 0 1 22.4 11.5' fill='none' stroke='%232e74d4' stroke-width='3.5' stroke-linecap='round'/><circle cx='22.4' cy='11.5' r='2.2' fill='%232e74d4'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231a1208'/><path d='M6 22 A12 12 0 0 1 26 22' fill='none' stroke='%23332a1a' stroke-width='3.5' stroke-linecap='round'/><path d='M6 22 A12 12 0 0 1 22.4 11.5' fill='none' stroke='%23c4682e' stroke-width='3.5' stroke-linecap='round'/><circle cx='22.4' cy='11.5' r='2.2' fill='%23c4682e'/></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <style>
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Tokens: dark ── */
+/* ── Tokens: dark (warm charcoal) ── */
 :root {
-  --bg:            oklch(13.5% 0.015 245);
-  --surface:       oklch(18%   0.015 245);
-  --surface-hi:    oklch(22%   0.016 245);
-  --border:        oklch(26%   0.018 245);
-  --text:          oklch(92%   0.006 245);
-  --text-dim:      oklch(52%   0.010 245);
-  --text-faint:    oklch(34%   0.012 245);
+  --bg:            oklch(11%   0.009 32);
+  --surface:       oklch(16%   0.011 32);
+  --surface-hi:    oklch(20.5% 0.013 34);
+  --border:        oklch(25%   0.015 34);
+  --text:          oklch(93%   0.006 55);
+  --text-dim:      oklch(55%   0.009 48);
+  --text-faint:    oklch(36%   0.009 40);
 
   --safe-kill:     oklch(62%   0.22  22);
-  --auto-restart:  oklch(73%   0.17  58);
-  --system:        oklch(68%   0.18 145);  /* green: used for pressure-normal + conn-dot only */
-  --neutral:       oklch(52%   0.008 245); /* muted: system badge — not actionable */
+  --auto-restart:  oklch(74%   0.17  55);
+  --system:        oklch(68%   0.18 145);
+  --neutral:       oklch(52%   0.009 42);
   --active:        oklch(60%   0.22 238);
   --wired:         oklch(57%   0.20 282);
   --compressed:    oklch(64%   0.20  44);
-  --free:          oklch(30%   0.014 245);
-  --track:         oklch(20%   0.012 245);
+  --free:          oklch(28%   0.014 32);
+  --track:         oklch(19%   0.011 32);
 
-  --row-hover:     oklch(22%   0.015 245 / 0.7);
+  --row-hover:     oklch(22%   0.012 32 / 0.75);
   --radius:        12px;
-  --font-display:  'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-body:     -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-display:  'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --font-serif:    'Instrument Serif', Georgia, serif;
+  --font-body:     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Instrument Sans', system-ui, sans-serif;
 }
 
-/* ── Tokens: light ── */
+/* ── Tokens: light (warm cream) ── */
 [data-theme="light"] {
-  --bg:            oklch(95%   0.008  78);
-  --surface:       oklch(99.5% 0.003  78);
-  --surface-hi:    oklch(97%   0.005  78);
-  --border:        oklch(88%   0.010  78);
-  --text:          oklch(16%   0.008 245);
-  --text-dim:      oklch(50%   0.008 245);
-  --text-faint:    oklch(72%   0.006  78);
+  --bg:            oklch(95.5% 0.010 72);
+  --surface:       oklch(99.5% 0.004 68);
+  --surface-hi:    oklch(97%   0.006 70);
+  --border:        oklch(87%   0.012 68);
+  --text:          oklch(16%   0.010 40);
+  --text-dim:      oklch(50%   0.008 45);
+  --text-faint:    oklch(70%   0.007 68);
 
   --safe-kill:     oklch(48%   0.22  22);
-  --auto-restart:  oklch(52%   0.18  58);
+  --auto-restart:  oklch(52%   0.18  55);
   --system:        oklch(42%   0.18 145);
-  --neutral:       oklch(46%   0.006 245);
+  --neutral:       oklch(46%   0.007 42);
   --active:        oklch(46%   0.22 238);
   --wired:         oklch(43%   0.20 282);
   --compressed:    oklch(50%   0.20  44);
-  --free:          oklch(78%   0.008  78);
-  --track:         oklch(91%   0.007  78);
+  --free:          oklch(78%   0.008  70);
+  --track:         oklch(90%   0.008  70);
 
-  --row-hover:     oklch(94%   0.006  78 / 0.8);
+  --row-hover:     oklch(93%   0.008  70 / 0.8);
 }
 
 /* ── Base ── */
@@ -73,7 +74,7 @@ body {
   min-height: 100vh;
   padding: 20px;
   -webkit-font-smoothing: antialiased;
-  transition: background 240ms ease, color 240ms ease;
+  transition: background 260ms ease, color 260ms ease;
 }
 
 .shell {
@@ -89,11 +90,11 @@ header {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 22px 26px;
+  padding: 24px 28px;
   display: flex;
   align-items: center;
-  gap: 26px;
-  transition: background 240ms ease, border-color 240ms ease;
+  gap: 28px;
+  transition: background 260ms ease, border-color 260ms ease;
 }
 
 /* ── Gauge block ── */
@@ -107,9 +108,9 @@ header {
 
 .wordmark {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.20em;
   text-transform: uppercase;
   color: var(--text-faint);
   user-select: none;
@@ -117,11 +118,35 @@ header {
 
 .gauge-wrap {
   position: relative;
-  width: 190px;
-  height: 190px;
+  width: 240px;
+  height: 240px;
 }
 
-#gauge-canvas { display: block; }
+/* Ambient pressure glow — CSS radial, behind the gauge canvas */
+.pressure-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease, background 700ms ease;
+}
+
+.pressure-glow.warn {
+  background: radial-gradient(circle at 50% 58%,
+    oklch(74% 0.17 55 / 0.20) 0%,
+    transparent 68%);
+  opacity: 1;
+}
+
+.pressure-glow.critical {
+  background: radial-gradient(circle at 50% 58%,
+    oklch(62% 0.22 22 / 0.28) 0%,
+    transparent 65%);
+  opacity: 1;
+}
+
+#gauge-canvas { display: block; position: relative; z-index: 1; }
 
 .gauge-center {
   position: absolute;
@@ -131,24 +156,26 @@ header {
   text-align: center;
   pointer-events: none;
   user-select: none;
+  z-index: 2;
 }
 
 #gauge-pct {
   display: block;
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--text);
 }
 
 .gauge-unit {
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 9px;
   font-weight: 600;
   color: var(--text-dim);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -175,9 +202,10 @@ header {
 }
 
 .stat-label {
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -191,10 +219,10 @@ header {
 }
 
 .stat-hero-num {
-  font-family: var(--font-display);
-  font-size: 38px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-family: var(--font-serif);
+  font-size: 44px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -205,32 +233,41 @@ header {
   font-weight: 500;
   color: var(--text-dim);
   letter-spacing: -0.01em;
+  align-self: flex-end;
+  padding-bottom: 3px;
 }
 
 /* Secondary pair */
-.stat-pair { display: flex; flex-direction: column; gap: 7px; }
+.stat-pair { display: flex; flex-direction: column; gap: 8px; }
 
 .stat-mini { display: flex; align-items: baseline; gap: 6px; }
 
 .stat-mini-label {
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--text-dim);
   width: 34px;
 }
 
 .stat-mini-val {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 
-.stat-mini-unit { font-size: 12px; color: var(--text-dim); }
+.stat-mini-unit {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-dim);
+  align-self: flex-end;
+  padding-bottom: 1px;
+}
 
 /* Pressure pill */
 .pressure-pill {
@@ -239,7 +276,8 @@ header {
   gap: 6px;
   padding: 5px 11px;
   border-radius: 100px;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 600;
   transition: background 300ms ease, color 300ms ease;
   white-space: nowrap;
@@ -247,8 +285,8 @@ header {
 
 .pressure-pill::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
@@ -266,10 +304,10 @@ header {
 }
 
 .stat-freeable-num {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--safe-kill);
   transition: color 300ms ease;
@@ -281,9 +319,11 @@ header {
   font-weight: 500;
   color: color-mix(in oklch, var(--safe-kill) 55%, var(--text-dim));
   transition: color 300ms ease;
+  align-self: flex-end;
+  padding-bottom: 2px;
 }
 
-.stat-freeable-row.none .stat-freeable-num { color: var(--text-faint); }
+.stat-freeable-row.none .stat-freeable-num  { color: var(--text-faint); }
 .stat-freeable-row.none .stat-freeable-unit { color: var(--text-faint); }
 
 /* ── Header right ── */
@@ -297,7 +337,7 @@ header {
   min-width: 148px;
 }
 
-/* Batch kill — solid fill when active, recedes when disabled */
+/* Batch kill — solid fill when active */
 .btn-batch {
   background: var(--safe-kill);
   color: oklch(97% 0.006 22);
@@ -347,7 +387,7 @@ header {
   border-color: var(--border);
 }
 
-/* Theme toggle + conn status sit together, separated from batch kill */
+/* Theme toggle + conn status */
 .header-controls {
   display: flex;
   align-items: center;
@@ -373,7 +413,6 @@ header {
 
 .theme-btn:hover { color: var(--text); }
 
-/* Focus rings for keyboard users */
 :focus-visible {
   outline: 2px solid var(--active);
   outline-offset: 2px;
@@ -383,6 +422,7 @@ header {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-family: var(--font-display);
   font-size: 10px;
   color: var(--text-dim);
   letter-spacing: 0.04em;
@@ -405,7 +445,7 @@ header {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  transition: background 240ms ease, border-color 240ms ease;
+  transition: background 260ms ease, border-color 260ms ease;
 }
 
 table { width: 100%; border-collapse: collapse; }
@@ -413,9 +453,10 @@ table { width: 100%; border-collapse: collapse; }
 thead th {
   padding: 10px 14px;
   text-align: left;
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
   border-bottom: 1px solid var(--border);
@@ -432,6 +473,17 @@ tbody tr {
 
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--row-hover); }
+
+/* Safety class: left-edge indicator via inset box-shadow */
+tbody tr[data-safety="safe-to-kill"] td:first-child {
+  box-shadow: inset 2px 0 0 var(--safe-kill);
+}
+tbody tr[data-safety="auto-restart"] td:first-child {
+  box-shadow: inset 2px 0 0 var(--auto-restart);
+}
+tbody tr[data-safety="system"] td:first-child {
+  box-shadow: inset 2px 0 0 var(--border);
+}
 
 td {
   padding: 10px 14px;
@@ -477,6 +529,7 @@ td {
 }
 
 .ram-label {
+  font-family: var(--font-display);
   font-size: 12px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
@@ -489,14 +542,13 @@ td {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-/* /colorize fix: system badge uses --neutral (muted), not green.
-   Green (--system) is reserved for pressure-normal and conn-dot. */
 .badge-safe    { background: color-mix(in oklch, var(--safe-kill)    14%, transparent); color: var(--safe-kill); }
 .badge-restart { background: color-mix(in oklch, var(--auto-restart) 14%, transparent); color: var(--auto-restart); }
 .badge-system  { background: color-mix(in oklch, var(--neutral)      14%, transparent); color: var(--neutral); }
@@ -508,6 +560,7 @@ td {
   padding: 4px 11px;
   border-radius: 6px;
   border: 1px solid transparent;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -533,6 +586,7 @@ td {
 .btn-restart:hover { background: color-mix(in oklch, var(--auto-restart) 14%, transparent); }
 
 .btn-kill-err {
+  font-family: var(--font-display);
   font-size: 10px;
   color: var(--safe-kill);
   margin-left: 6px;
@@ -542,17 +596,18 @@ td {
 .empty-cell {
   padding: 48px;
   text-align: center;
+  font-family: var(--font-display);
   color: var(--text-dim);
 }
 
-/* Kill flash animation */
+/* Kill flash */
 @keyframes row-flash {
   0%, 100% { background: transparent; }
   35%       { background: color-mix(in oklch, var(--safe-kill) 10%, transparent); }
 }
 .row-flash { animation: row-flash 320ms ease; }
 
-/* ── Toast — top-right, near batch kill button ── */
+/* ── Toast — top-right ── */
 #toast-container {
   position: fixed;
   top: 20px;
@@ -569,9 +624,10 @@ td {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 14px;
+  font-family: var(--font-display);
   font-size: 12px;
   color: var(--text);
-  box-shadow: 0 4px 20px oklch(0% 0 0 / 0.3);
+  box-shadow: 0 4px 24px oklch(0% 0 0 / 0.35);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -589,8 +645,8 @@ td {
   <div class="gauge-block">
     <span class="wordmark">RAM Watch</span>
     <div class="gauge-wrap">
-      <!-- role+aria-label updated each SSE tick with full segment breakdown -->
-      <canvas id="gauge-canvas" width="190" height="190"
+      <div id="pressure-glow" class="pressure-glow"></div>
+      <canvas id="gauge-canvas" width="240" height="240"
               role="img" aria-label="Memory gauge: loading"></canvas>
       <div class="gauge-center">
         <span id="gauge-pct">—</span>
@@ -629,7 +685,7 @@ td {
     </div>
 
     <div class="stat-section">
-      <span class="stat-label">Freeable</span>
+      <span class="stat-label">Recoverable</span>
       <div class="stat-freeable-row none" id="s-freeable-row">
         <span class="stat-freeable-num" id="s-freeable-num">—</span>
         <span class="stat-freeable-unit">GB</span>
@@ -638,7 +694,6 @@ td {
   </div>
 
   <div class="header-right">
-    <!-- Primary action: solid fill, full-width, F shortcut -->
     <button id="batch-kill-btn" class="btn-batch" onclick="batchKill()" disabled
             aria-label="Kill all safe-to-kill processes (F)">
       Free <span id="batch-gb">—</span> GB <kbd>F</kbd>
@@ -683,7 +738,7 @@ td {
 
 <script>
 // ── Theme ──────────────────────────────────────────────────────────────────
-const html   = document.documentElement;
+const html       = document.documentElement;
 const gaugeCanvas = document.getElementById('gauge-canvas');
 
 const MOON = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
@@ -744,11 +799,11 @@ function toggleTheme() {
 // ── Three.js gauge ─────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ canvas: gaugeCanvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(190, 190);
+renderer.setSize(240, 240);
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 100);
-camera.position.set(0, 0.3, 5.2);
+const camera = new THREE.PerspectiveCamera(22, 1, 0.1, 100);
+camera.position.set(0, 0.28, 5.4);
 camera.lookAt(0, -0.06, 0);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.62));
@@ -888,17 +943,21 @@ function updateHeader(data) {
     pStr.includes('critical') ? 'pressure-critical' :
     pStr.includes('warn')     ? 'pressure-warn'     : 'pressure-normal');
 
+  // Ambient pressure glow on gauge
+  const glowEl = document.getElementById('pressure-glow');
+  glowEl.className = 'pressure-glow' + (
+    pStr.includes('critical') ? ' critical' :
+    pStr.includes('warn')     ? ' warn'     : '');
+
   const pct = data.total_gb > 0 ? Math.round(data.used_gb / data.total_gb * 100) : 0;
   document.getElementById('gauge-pct').textContent = pct + '%';
 
-  // /audit: update canvas aria-label with full segment breakdown
   gaugeCanvas.setAttribute('aria-label',
     `Memory gauge: ${pct}% used — Active ${fmt1(data.active_gb || 0)} GB, ` +
     `Wired ${fmt1(data.wired_gb || 0)} GB, ` +
     `Compressed ${fmt1(data.compressed_gb || 0)} GB, ` +
     `Free ${fmt1(data.free_gb || 0)} GB`);
 
-  // Color hero Used number by pressure level
   const usedRow = document.getElementById('s-used-row');
   usedRow.style.color = pStr.includes('critical') ? 'var(--safe-kill)' :
                         pStr.includes('warn')     ? 'var(--auto-restart)' : '';
@@ -915,7 +974,6 @@ function updateHeader(data) {
 // ── Table ────────────────────────────────────────────────────────────────────
 function badgeFor(sc) {
   if (sc === 'safe-to-kill') return '<span class="badge badge-safe">Safe</span>';
-  // /clarify: "Auto-restart" with tooltip explaining the behavior
   if (sc === 'auto-restart') return '<span class="badge badge-restart" title="Claude will restart this automatically">Auto-restart</span>';
   return '<span class="badge badge-system">System</span>';
 }
@@ -948,7 +1006,6 @@ function updateTable(procs) {
     return;
   }
 
-  // /clarify: recalculate maxRAM from current tick — bars re-normalize after kills
   const maxRAM = procs.length > 0 ? Math.max(...procs.map(p => p.ram_mb)) : 1;
   const seen   = new Set(procs.map(p => p.pid));
 
@@ -979,6 +1036,9 @@ function updateTable(procs) {
     }
 
     if (tr.dataset.killing) return;
+
+    // Set safety class on tr for CSS left-edge indicator
+    tr.dataset.safety = p.safety_class;
 
     tr.innerHTML = `
       <td class="col-name" title="${esc(p.command || p.name)}">${esc(p.name)}</td>
@@ -1012,7 +1072,6 @@ async function killProc(pid, btn) {
   try {
     const res = await fetch(`/api/kill/${pid}`, { method: 'POST' });
     if (res.ok) {
-      // /audit: move focus to next row's kill button or batch kill before removing
       const allRows    = [...tbody.querySelectorAll('tr:not([data-killing])')];
       const currentIdx = allRows.indexOf(tr);
       const nextFocus  = allRows[currentIdx + 1]?.querySelector('.btn') ||
@@ -1142,7 +1201,7 @@ document.addEventListener('mouseup', e => {
 });
 
 // ── Reduced motion ────────────────────────────────────────────────────────────
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+if (window.matchMedia('(prefers-reduce-motion: reduce)').matches) {
   gsap.globalTimeline.timeScale(0);
 }
 </script>
