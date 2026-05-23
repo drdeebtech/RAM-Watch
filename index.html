@@ -494,9 +494,11 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--row-hover); }
 
 /* Safety left-edge indicator (members only — group rows have their own treatment) */
-tbody tr[data-safety="safe-to-kill"] td:first-child { box-shadow: inset 2px 0 0 var(--safe-kill); }
-tbody tr[data-safety="auto-restart"]  td:first-child { box-shadow: inset 2px 0 0 var(--auto-restart); }
-tbody tr[data-safety="system"]        td:first-child { box-shadow: inset 2px 0 0 var(--border); }
+tbody tr[data-safety="safe-to-kill"] td:first-child { box-shadow: inset 2px 0 0 var(--system); }
+tbody tr[data-safety="auto-restart"] td:first-child { box-shadow: inset 2px 0 0 var(--auto-restart); }
+tbody tr[data-safety="app"]          td:first-child { box-shadow: inset 2px 0 0 oklch(78% 0.14 88); }
+tbody tr[data-safety="critical"]     td:first-child { box-shadow: inset 2px 0 0 var(--safe-kill); }
+tbody tr[data-safety="system"]       td:first-child { box-shadow: inset 2px 0 0 var(--border); } /* legacy */
 
 /* Group header rows */
 tbody tr.group-row {
@@ -505,9 +507,11 @@ tbody tr.group-row {
 }
 tbody tr.group-row:hover { background: var(--surface-hi); }
 tbody tr.group-row td { padding: 12px 14px; }
-tbody tr.group-row[data-group-safety="safe-to-kill"] td:first-child { box-shadow: inset 3px 0 0 var(--safe-kill); }
+tbody tr.group-row[data-group-safety="safe-to-kill"] td:first-child { box-shadow: inset 3px 0 0 var(--system); }
 tbody tr.group-row[data-group-safety="auto-restart"]  td:first-child { box-shadow: inset 3px 0 0 var(--auto-restart); }
-tbody tr.group-row[data-group-safety="system"]        td:first-child { box-shadow: inset 3px 0 0 var(--text-dim); }
+tbody tr.group-row[data-group-safety="app"]           td:first-child { box-shadow: inset 3px 0 0 oklch(78% 0.14 88); }
+tbody tr.group-row[data-group-safety="critical"]      td:first-child { box-shadow: inset 3px 0 0 var(--safe-kill); }
+tbody tr.group-row[data-group-safety="system"]        td:first-child { box-shadow: inset 3px 0 0 var(--text-dim); } /* legacy */
 
 .group-name-cell { display: flex; align-items: center; gap: 12px; max-width: none; }
 .group-toggle {
@@ -590,9 +594,11 @@ td { padding: 10px 14px; vertical-align: middle; }
   text-transform: uppercase;
 }
 
-.badge-safe    { background: color-mix(in oklch, var(--safe-kill)    14%, transparent); color: var(--safe-kill); }
-.badge-restart { background: color-mix(in oklch, var(--auto-restart) 14%, transparent); color: var(--auto-restart); }
-.badge-system  { background: color-mix(in oklch, var(--neutral)      14%, transparent); color: var(--neutral); }
+.badge-safe     { background: color-mix(in oklch, var(--system)        14%, transparent); color: var(--system); }
+.badge-restart  { background: color-mix(in oklch, var(--auto-restart)   14%, transparent); color: var(--auto-restart); }
+.badge-app      { background: color-mix(in oklch, oklch(78% 0.14 88)    16%, transparent); color: oklch(78% 0.14 88); }
+.badge-critical { background: color-mix(in oklch, var(--safe-kill)      14%, transparent); color: var(--safe-kill); }
+.badge-system   { background: color-mix(in oklch, var(--neutral)        14%, transparent); color: var(--neutral); } /* legacy */
 
 /* Action buttons — min-height for comfortable touch/click targets */
 .btn {
@@ -669,6 +675,77 @@ td { padding: 10px 14px; vertical-align: middle; }
   font-size: 12px;
   color: var(--text);
   box-shadow: 0 4px 24px var(--shadow-toast);
+}
+
+/* ── Hover card ────────────────────────────────────────────────────────── */
+#hover-card {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 130ms ease, transform 130ms ease;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 15px;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  box-shadow: 0 12px 32px var(--shadow-toast);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+#hover-card.visible { opacity: 1; transform: translateY(0); }
+#hover-card .hc-name {
+  font: 600 13.5px var(--font-display);
+  letter-spacing: -0.005em;
+  margin: 0 0 3px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+#hover-card .hc-meta {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+#hover-card .hc-desc {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+#hover-card .hc-parent {
+  color: var(--text-dim);
+  font-size: 11.5px;
+  margin-bottom: 10px;
+}
+#hover-card .hc-verdict {
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 11.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  line-height: 1.4;
+}
+#hover-card .hc-verdict.critical    { background: color-mix(in oklch, var(--safe-kill)       12%, transparent); color: var(--safe-kill); }
+#hover-card .hc-verdict.app         { background: color-mix(in oklch, oklch(78% 0.14 88)     12%, transparent); color: oklch(78% 0.14 88); }
+#hover-card .hc-verdict.auto-restart{ background: color-mix(in oklch, var(--auto-restart)    12%, transparent); color: var(--auto-restart); }
+#hover-card .hc-verdict.safe-to-kill{ background: color-mix(in oklch, var(--system)          12%, transparent); color: var(--system); }
+#hover-card .hc-command {
+  font: 400 10.5px ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--text-faint);
+  word-break: break-all;
+  max-height: 64px;
+  overflow: hidden;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
 }
 
 /* ── Responsive: narrow viewports ── */
@@ -846,6 +923,8 @@ td { padding: 10px 14px; vertical-align: middle; }
 </div>
 
 <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+<div id="hover-card" role="tooltip" aria-hidden="true"></div>
 
 <!-- Scripts at end of body: HTML parses without blocking ── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1025,6 +1104,8 @@ const rowDataMap = new Map(); // pid → 'name|safetyClass' for change detection
 const groupRowMap   = new Map(); // groupName → <tr> (group header rows)
 const groupDataMap  = new Map(); // groupName → 'totalMB|count|safety' for diffing
 const groupExpanded = new Map(); // groupName → bool (default: top 5 expanded)
+const procData      = new Map(); // pid → latest processDTO (for hover card)
+const hoverCard     = document.getElementById('hover-card');
 const connDot  = document.getElementById('conn-dot');
 const connLbl  = document.getElementById('conn-label');
 
@@ -1107,13 +1188,13 @@ function updateHeader(data) {
 // ── Table ────────────────────────────────────────────────────────────────────
 function badgeFor(sc) {
   if (sc === 'safe-to-kill') return '<span class="badge badge-safe">Safe</span>';
-  // sr-only carries tooltip text reliably to screen readers instead of title attr
   if (sc === 'auto-restart') return '<span class="badge badge-restart">Auto-restart<span class="sr-only"> — Claude restarts this process automatically</span></span>';
-  return '<span class="badge badge-system">System</span>';
+  if (sc === 'app')          return '<span class="badge badge-app">App<span class="sr-only"> — killable but you may lose unsaved work</span></span>';
+  return '<span class="badge badge-critical">Critical<span class="sr-only"> — do not kill, may crash session</span></span>';
 }
 
 function actionsFor(p) {
-  if (p.safety_class === 'system') return '';
+  if (p.safety_class === 'critical') return '';
   const isChroma = p.name === 'uvx' || (p.name || '').includes('chroma');
   let h = `<button class="btn btn-kill" onclick="killProc(${p.pid},this)" aria-label="Kill ${esc(p.name)} PID ${p.pid}">Kill</button>`;
   if (isChroma)
@@ -1209,6 +1290,7 @@ function updateTable(groups) {
   for (const [pid, tr] of rowMap) {
     if (!seenPIDs.has(pid)) {
       rowDataMap.delete(pid);
+      procData.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -18, duration: 0.26, ease: 'power2.in',
         onComplete: () => { tr.remove(); rowMap.delete(pid); },
@@ -1252,6 +1334,7 @@ function updateTable(groups) {
     // Member rows
     const maxRAM = g.members.length > 0 ? Math.max(...g.members.map(p => p.ram_mb)) : 1;
     g.members.forEach(p => {
+      procData.set(p.pid, p); // store latest for hover card lookup
       let tr = rowMap.get(p.pid);
       const barPct = Math.min(100, p.ram_mb / maxRAM * 100).toFixed(1);
 
@@ -1348,6 +1431,7 @@ async function killGroup(name) {
         killed++;
         rowDataMap.delete(pid);
         rowMap.delete(pid);
+        procData.delete(pid);
         gsap.to(tr, {
           opacity: 0, x: -20, duration: 0.24, ease: 'power2.in',
           onComplete: () => tr.remove(),
@@ -1372,6 +1456,87 @@ tbody.addEventListener('click', e => {
   if (killGroupBtn) { killGroup(killGroupBtn.dataset.groupKill); }
 });
 
+// ── Hover card ───────────────────────────────────────────────────────────────
+function verdictForSafety(sc) {
+  switch (sc) {
+    case 'critical':     return ['critical', '⛔', 'CRITICAL — killing this can crash your session or require a reboot.'];
+    case 'app':          return ['app', '⚡', 'APP — killable, but you may lose unsaved work in this app.'];
+    case 'auto-restart': return ['auto-restart', '↻', 'AUTO-RESTART — safe to kill; will respawn automatically.'];
+    case 'safe-to-kill': return ['safe-to-kill', '✓', 'SAFE — orphan or leftover. Killing has no consequences.'];
+    default:             return ['app', '?', 'Unknown safety classification.'];
+  }
+}
+
+function fmtAgeLong(s) {
+  if (s < 60)    return s + ' seconds';
+  if (s < 3600)  return Math.floor(s / 60) + ' minutes';
+  if (s < 86400) return Math.floor(s / 3600) + ' hours';
+  return Math.floor(s / 86400) + ' days';
+}
+
+function showHoverCard(tr) {
+  const pid = parseInt(tr.dataset.pid, 10);
+  const p = procData.get(pid);
+  if (!p) return;
+
+  const [verdictClass, verdictIcon, verdictText] = verdictForSafety(p.safety_class);
+  const parentLine = p.parent_name && p.parent_name !== p.name
+    ? `<div class="hc-parent">Running: ${esc(p.parent_name)}</div>`
+    : '';
+  const cmdLine = p.command
+    ? `<div class="hc-command">${esc(p.command)}</div>`
+    : '';
+
+  hoverCard.innerHTML = `
+    <div class="hc-name">${esc(p.name)}</div>
+    <div class="hc-meta">PID ${p.pid} · ${fmtAgeLong(p.age_secs)} · ${Math.round(p.ram_mb)} MB</div>
+    <div class="hc-desc">${esc(p.description || 'No description available.')}</div>
+    ${parentLine}
+    <div class="hc-verdict ${verdictClass}"><span>${verdictIcon}</span><span>${esc(verdictText)}</span></div>
+    ${cmdLine}
+  `;
+
+  // Position: prefer right of row, fall back to left if off-screen
+  const rect      = tr.getBoundingClientRect();
+  const cardWidth = 360;
+  const cardEst   = 220;
+  const margin    = 12;
+  let left = rect.right + margin;
+  if (left + cardWidth > window.innerWidth - 8) {
+    left = rect.left - cardWidth - margin;
+    if (left < 8) left = Math.max(8, window.innerWidth - cardWidth - 12);
+  }
+  let top = rect.top;
+  if (top + cardEst > window.innerHeight - 8) {
+    top = Math.max(8, window.innerHeight - cardEst - 12);
+  }
+  hoverCard.style.left = left + 'px';
+  hoverCard.style.top  = top + 'px';
+  hoverCard.classList.add('visible');
+  hoverCard.setAttribute('aria-hidden', 'false');
+}
+
+function hideHoverCard() {
+  hoverCard.classList.remove('visible');
+  hoverCard.setAttribute('aria-hidden', 'true');
+}
+
+// Use mouseover/mouseout (bubble) so we can use event delegation on tbody
+tbody.addEventListener('mouseover', e => {
+  const tr = e.target.closest('tr[data-pid]');
+  if (!tr) return;
+  // Don't show for rows in killing state
+  if (tr.dataset.killing) { hideHoverCard(); return; }
+  showHoverCard(tr);
+});
+tbody.addEventListener('mouseout', e => {
+  const tr = e.target.closest('tr[data-pid]');
+  if (!tr) return;
+  // Hide only when leaving to something outside any member row
+  const related = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('tr[data-pid]');
+  if (!related) hideHoverCard();
+});
+
 // ── Kill ─────────────────────────────────────────────────────────────────────
 async function killProc(pid, btn) {
   const tr   = btn.closest('tr');
@@ -1394,6 +1559,7 @@ async function killProc(pid, btn) {
 
       rowDataMap.delete(pid);
       rowMap.delete(pid);
+      procData.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -20, duration: 0.26, ease: 'power2.in',
         onComplete: () => { tr.remove(); nextFocus?.focus(); },
@@ -1461,6 +1627,7 @@ async function batchKill() {
         if (tr) {
           rowDataMap.delete(p.pid);
           rowMap.delete(p.pid);
+          procData.delete(p.pid);
           gsap.to(tr, {
             opacity: 0, x: -20, duration: 0.24, ease: 'power2.in',
             onComplete: () => tr.remove(),

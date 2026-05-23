@@ -130,7 +130,7 @@ func GroupProcesses(procs []Process) []ProcessGroup {
 	for _, p := range procs {
 		name := assignment[p.PID]
 		if groupMap[name] == nil {
-			groupMap[name] = &ProcessGroup{Name: name, SafetyClass: System}
+			groupMap[name] = &ProcessGroup{Name: name, SafetyClass: Critical}
 		}
 		g := groupMap[name]
 		g.Members = append(g.Members, p)

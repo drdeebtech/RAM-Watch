@@ -59,7 +59,7 @@ var defaultStats = &fakeStats{
 	procs: []Process{
 		{PID: 100, Name: "claude", Command: "/home/.claude/versions/1.0/claude bg-spare", RSSBytes: 100 * 1024 * 1024, SafetyClass: SafeToKill},
 		{PID: 200, Name: "npm", Command: "node /usr/bin/npm exec @mcp/server", RSSBytes: 50 * 1024 * 1024, SafetyClass: AutoRestart},
-		{PID: 300, Name: "kernel_task", Command: "kernel_task", RSSBytes: 200 * 1024 * 1024, SafetyClass: System},
+		{PID: 300, Name: "kernel_task", Command: "kernel_task", RSSBytes: 200 * 1024 * 1024, SafetyClass: Critical},
 		{PID: 400, Name: "chroma-mcp", Command: chromaCmd, RSSBytes: 80 * 1024 * 1024, SafetyClass: AutoRestart},
 	},
 }
@@ -220,9 +220,9 @@ func TestSSEEvent_GroupsSortedByRAMDescending(t *testing.T) {
 		mem:      MemStats{UsedGB: 8.0, FreeGB: 2.0, TotalGB: 16.0},
 		pressure: "Normal",
 		procs: []Process{
-			{PID: 1, Name: "small", RSSBytes: 10 * 1024 * 1024, SafetyClass: System},
-			{PID: 2, Name: "large", RSSBytes: 500 * 1024 * 1024, SafetyClass: System},
-			{PID: 3, Name: "medium", RSSBytes: 100 * 1024 * 1024, SafetyClass: System},
+			{PID: 1, Name: "small", RSSBytes: 10 * 1024 * 1024, SafetyClass: Critical},
+			{PID: 2, Name: "large", RSSBytes: 500 * 1024 * 1024, SafetyClass: Critical},
+			{PID: 3, Name: "medium", RSSBytes: 100 * 1024 * 1024, SafetyClass: Critical},
 		},
 	}
 	srv := NewServer(unsorted, &fakeKiller{}, &fakeRestarter{})

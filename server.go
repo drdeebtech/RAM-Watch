@@ -33,10 +33,13 @@ type streamEvent struct {
 type processDTO struct {
 	PID         int     `json:"pid"`
 	Name        string  `json:"name"`
+	Command     string  `json:"command"`
 	RAMMB       float64 `json:"ram_mb"`
 	CPUPercent  float64 `json:"cpu_pct"`
 	AgeSecs     int64   `json:"age_secs"`
 	SafetyClass string  `json:"safety_class"`
+	Description string  `json:"description"`
+	ParentName  string  `json:"parent_name"`
 }
 
 type processGroupDTO struct {
@@ -52,9 +55,12 @@ func safetyLabel(sc SafetyClass) string {
 		return "safe-to-kill"
 	case AutoRestart:
 		return "auto-restart"
-	default:
-		return "system"
+	case App:
+		return "app"
+	case Critical:
+		return "critical"
 	}
+	return "critical"
 }
 
 func (s *Server) buildEvent() (*streamEvent, error) {
@@ -73,18 +79,32 @@ func (s *Server) buildEvent() (*streamEvent, error) {
 		}
 	}
 
+	// Index processes by PID so we can look up parents for descriptions.
+	procByPID := make(map[int]*Process, len(procs))
+	for i := range procs {
+		procByPID[procs[i].PID] = &procs[i]
+	}
+
 	groups := GroupProcesses(procs)
 	groupDTOs := make([]processGroupDTO, len(groups))
 	for i, g := range groups {
 		members := make([]processDTO, len(g.Members))
 		for j, p := range g.Members {
+			parent := procByPID[p.PPID]
+			parentName := ""
+			if parent != nil {
+				parentName = parent.Name
+			}
 			members[j] = processDTO{
 				PID:         p.PID,
 				Name:        p.Name,
+				Command:     p.Command,
 				RAMMB:       float64(p.RSSBytes) / (1024 * 1024),
 				CPUPercent:  p.CPUPercent,
 				AgeSecs:     p.AgeSecs,
 				SafetyClass: safetyLabel(p.SafetyClass),
+				Description: DescribeProcess(p, parent),
+				ParentName:  parentName,
 			}
 		}
 		groupDTOs[i] = processGroupDTO{
@@ -132,8 +152,8 @@ func (s *Server) handleKill(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "process not found", http.StatusNotFound)
 		return
 	}
-	if target.SafetyClass == System {
-		http.Error(w, "cannot kill system process", http.StatusForbidden)
+	if target.SafetyClass == Critical {
+		http.Error(w, "cannot kill critical system process", http.StatusForbidden)
 		return
 	}
 

@@ -53,7 +53,7 @@ func ParseProcessList(psOutput string) []Process {
 			Command:     command,
 			RSSBytes:    rssKB * 1024,
 			AgeSecs:     parseElapsed(elapsed),
-			SafetyClass: AssignSafetyClass(command),
+			SafetyClass: AssignSafetyClass(name, command),
 		})
 	}
 	return procs

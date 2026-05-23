@@ -52,7 +52,7 @@ func TestParseProcessList_SafetyClassAssigned(t *testing.T) {
 	}{
 		{0, SafeToKill},  // claude bg-spare
 		{1, AutoRestart}, // npm exec
-		{2, System},      // kernel_task
+		{2, Critical},    // kernel_task
 		{3, AutoRestart}, // chroma-mcp
 	}
 	for _, c := range cases {

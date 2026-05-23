@@ -51,7 +51,7 @@ func TestGroupProcesses_SortByTotalRAMDescending(t *testing.T) {
 func TestGroupProcesses_SafetyClassAggregation(t *testing.T) {
 	// Group with a SafeToKill member should be marked SafeToKill (most permissive).
 	procs := []Process{
-		{PID: 1, Name: "claude", Command: "/usr/local/bin/claude", SafetyClass: System, RSSBytes: 500 * 1024 * 1024},
+		{PID: 1, Name: "claude", Command: "/usr/local/bin/claude", SafetyClass: Critical, RSSBytes: 500 * 1024 * 1024},
 		{PID: 2, Name: "exec", Command: "/usr/local/bin/npm exec @mcp/server", SafetyClass: AutoRestart, PPID: 1, RSSBytes: 50 * 1024 * 1024},
 	}
 	groups := GroupProcesses(procs)

@@ -28,21 +28,24 @@ type ProcessRestarter interface {
 
 type SafetyClass int
 
+// Ordered from MOST permissive (kill freely) to LEAST permissive (do not kill).
+// Group aggregation picks the lowest value among members (most permissive).
 const (
-	SafeToKill  SafetyClass = iota
-	AutoRestart SafetyClass = iota
-	System      SafetyClass = iota
+	SafeToKill  SafetyClass = iota // 0 - orphans, leftover daemons
+	AutoRestart                    // 1 - respawns automatically (MCP servers, ChromaDB)
+	App                            // 2 - user-facing app, killable but loses work
+	Critical                       // 3 - killing crashes session / requires reboot
 )
 
-func AssignSafetyClass(cmd string) SafetyClass {
-	switch {
-	case strings.Contains(cmd, "claude/versions"):
-		return SafeToKill
-	case strings.Contains(cmd, "npm exec"):
-		return AutoRestart
-	case strings.Contains(cmd, "chroma-mcp"):
-		return AutoRestart
-	default:
-		return System
+// AssignSafetyClass returns the classification for a process based on its
+// name and full command. See descriptions.go for the rule set.
+func AssignSafetyClass(name, cmd string) SafetyClass {
+	if rule := matchProcessRule(name, cmd); rule != nil {
+		return rule.Safety
 	}
+	// Fallback heuristics for unknown processes
+	if strings.HasPrefix(name, "com.apple.") {
+		return Critical
+	}
+	return App
 }
