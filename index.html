@@ -482,6 +482,79 @@ thead th {
   white-space: nowrap;
   background: var(--surface-hi);
 }
+thead th.sortable { cursor: pointer; user-select: none; transition: color 120ms ease; }
+thead th.sortable:hover { color: var(--text); }
+thead th.sort-active { color: var(--text); }
+thead th .sort-arrow {
+  display: inline-block;
+  min-width: 10px;
+  margin-left: 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 400;
+}
+thead th.sort-active .sort-arrow { color: var(--auto-restart); }
+
+/* ── Filter toolbar ── */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 440px;
+}
+.search-wrap input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 32px 8px 32px;
+  font: 13px var(--font-display);
+  color: var(--text);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.search-wrap input::placeholder { color: var(--text-faint); }
+.search-wrap input:focus { outline: none; border-color: var(--auto-restart); background: var(--surface); }
+.search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.filter-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px 8px;
+  font: 600 16px/1 var(--font-display);
+  border-radius: 4px;
+  display: none;
+}
+.filter-clear:hover { color: var(--text); background: var(--surface-hi); }
+.filter-clear.visible { display: inline-block; }
+.search-hint { color: var(--text-faint); font-size: 11px; }
+.search-hint kbd {
+  background: var(--kbd-bg);
+  color: var(--kbd-text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font: 600 9px var(--font-display);
+  font-feature-settings: 'tnum';
+}
 
 tbody tr {
   border-bottom: 1px solid var(--border);
@@ -903,13 +976,23 @@ td { padding: 10px 14px; vertical-align: middle; }
 
 <main>
   <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7 12.5A5.5 5.5 0 1 0 7 1.5a5.5 5.5 0 0 0 0 11Zm4-1.5 3.5 3.5"/>
+        </svg>
+        <input id="filter-input" type="search" placeholder="Filter processes…" autocomplete="off" spellcheck="false" aria-label="Filter processes">
+        <button id="filter-clear" class="filter-clear" type="button" aria-label="Clear filter">×</button>
+      </div>
+      <div class="search-hint"><kbd>/</kbd> focus · <kbd>Esc</kbd> clear</div>
+    </div>
     <table>
       <thead>
         <tr>
-          <th scope="col">Process</th>
-          <th scope="col">RAM</th>
-          <th scope="col">Meta</th>
-          <th scope="col">Status</th>
+          <th scope="col" data-sort="name"   class="sortable">Process<span class="sort-arrow"></span></th>
+          <th scope="col" data-sort="ram"    class="sortable sort-active sort-desc">RAM<span class="sort-arrow">↓</span></th>
+          <th scope="col" data-sort="age"    class="sortable">Meta<span class="sort-arrow"></span></th>
+          <th scope="col" data-sort="safety" class="sortable">Status<span class="sort-arrow"></span></th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
@@ -1106,6 +1189,77 @@ const groupDataMap  = new Map(); // groupName → 'totalMB|count|safety' for dif
 const groupExpanded = new Map(); // groupName → bool (default: top 5 expanded)
 const procData      = new Map(); // pid → latest processDTO (for hover card)
 const hoverCard     = document.getElementById('hover-card');
+
+// Sort + filter state
+let sortBy   = 'ram';   // 'name' | 'ram' | 'age' | 'safety'
+let sortDir  = 'desc';  // 'desc' | 'asc'
+let filterQ  = '';
+let lastGroups = [];
+
+const safetyRank = { 'safe-to-kill': 0, 'auto-restart': 1, 'app': 2, 'critical': 3 };
+
+function sortGroups(groups) {
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...groups].sort((a, b) => {
+    if (sortBy === 'name')   return a.name.toLowerCase().localeCompare(b.name.toLowerCase()) * dir;
+    if (sortBy === 'safety') return ((safetyRank[a.safety_class] ?? 3) - (safetyRank[b.safety_class] ?? 3)) * dir;
+    if (sortBy === 'age') {
+      const aMin = Math.min(...a.members.map(p => p.age_secs));
+      const bMin = Math.min(...b.members.map(p => p.age_secs));
+      return (aMin - bMin) * dir;
+    }
+    return (a.total_mb - b.total_mb) * dir; // 'ram'
+  });
+}
+
+function sortMembers(members) {
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...members].sort((a, b) => {
+    if (sortBy === 'name')   return a.name.toLowerCase().localeCompare(b.name.toLowerCase()) * dir;
+    if (sortBy === 'safety') return ((safetyRank[a.safety_class] ?? 3) - (safetyRank[b.safety_class] ?? 3)) * dir;
+    if (sortBy === 'age')    return (a.age_secs - b.age_secs) * dir;
+    return (a.ram_mb - b.ram_mb) * dir; // 'ram'
+  });
+}
+
+function applySortAndFilter(groups) {
+  const sorted = sortGroups(groups).map(g => ({ ...g, members: sortMembers(g.members) }));
+  // Filter is applied as a visibility pass AFTER rendering (so DOM stays stable)
+  return sorted;
+}
+
+function applyFilterVisibility() {
+  const q = filterQ.toLowerCase();
+  if (!q) {
+    for (const [pid, tr] of rowMap) {
+      if (!tr.dataset.memberOf) { tr.style.display = ''; continue; }
+      const expanded = groupExpanded.get(tr.dataset.memberOf) !== false;
+      tr.style.display = expanded ? '' : 'none';
+    }
+    for (const tr of groupRowMap.values()) tr.style.display = '';
+    return;
+  }
+  const visibleGroups = new Set();
+  for (const [pid, tr] of rowMap) {
+    const p = procData.get(pid);
+    if (!p) continue;
+    const groupName = tr.dataset.memberOf || '';
+    const hay = (p.name + ' ' + (p.command || '') + ' ' + (p.description || '') + ' ' + groupName).toLowerCase();
+    const matches = hay.includes(q);
+    tr.style.display = matches ? '' : 'none';
+    if (matches && groupName) visibleGroups.add(groupName);
+  }
+  for (const [name, tr] of groupRowMap) {
+    const groupMatches = name.toLowerCase().includes(q) || visibleGroups.has(name);
+    tr.style.display = groupMatches ? '' : 'none';
+    if (groupMatches && name.toLowerCase().includes(q)) {
+      // Group name itself matched — show ALL its members
+      for (const [pid, mtr] of rowMap) {
+        if (mtr.dataset.memberOf === name) mtr.style.display = '';
+      }
+    }
+  }
+}
 const connDot  = document.getElementById('conn-dot');
 const connLbl  = document.getElementById('conn-label');
 
@@ -1121,7 +1275,9 @@ function connectSSE() {
   sse.onmessage = e => {
     const data = JSON.parse(e.data);
     updateHeader(data);
-    updateTable(data.groups || []);
+    lastGroups = data.groups || [];
+    updateTable(applySortAndFilter(lastGroups));
+    applyFilterVisibility();
   };
   sse.onerror = () => {
     setConnState('error');
@@ -1535,6 +1691,74 @@ function hideHoverCard() {
   hoverCard.classList.remove('visible');
   hoverCard.setAttribute('aria-hidden', 'true');
 }
+
+// ── Sortable column headers ─────────────────────────────────────────────────
+function refreshSortHeaders() {
+  document.querySelectorAll('thead th[data-sort]').forEach(th => {
+    const isActive = th.dataset.sort === sortBy;
+    th.classList.toggle('sort-active', isActive);
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = isActive ? (sortDir === 'desc' ? '↓' : '↑') : '';
+  });
+}
+
+document.querySelectorAll('thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.sort;
+    if (sortBy === col) {
+      sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      sortBy = col;
+      sortDir = (col === 'name') ? 'asc' : 'desc';
+    }
+    refreshSortHeaders();
+    // Force re-render with new sort order; clear diff caches so all rows refresh
+    groupDataMap.clear();
+    rowDataMap.clear();
+    if (lastGroups.length) {
+      updateTable(applySortAndFilter(lastGroups));
+      applyFilterVisibility();
+    }
+  });
+});
+
+// ── Filter input ────────────────────────────────────────────────────────────
+const filterInput = document.getElementById('filter-input');
+const filterClear = document.getElementById('filter-clear');
+
+filterInput.addEventListener('input', e => {
+  filterQ = e.target.value.trim();
+  filterClear.classList.toggle('visible', !!filterQ);
+  applyFilterVisibility();
+});
+
+filterClear.addEventListener('click', () => {
+  filterInput.value = '';
+  filterQ = '';
+  filterClear.classList.remove('visible');
+  applyFilterVisibility();
+  filterInput.focus();
+});
+
+document.addEventListener('keydown', e => {
+  // `/` focuses filter (when not in an input)
+  if (e.key === '/' && document.activeElement !== filterInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const tag = (document.activeElement?.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    filterInput.focus();
+    filterInput.select();
+    return;
+  }
+  // Esc clears filter when focused
+  if (e.key === 'Escape' && document.activeElement === filterInput) {
+    filterInput.value = '';
+    filterQ = '';
+    filterClear.classList.remove('visible');
+    applyFilterVisibility();
+    filterInput.blur();
+  }
+});
 
 // Use mouseover/mouseout (bubble) so we can use event delegation on tbody
 tbody.addEventListener('mouseover', e => {
