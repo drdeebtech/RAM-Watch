@@ -8,8 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231a1208'/><path d='M6 22 A12 12 0 0 1 26 22' fill='none' stroke='%23332a1a' stroke-width='3.5' stroke-linecap='round'/><path d='M6 22 A12 12 0 0 1 22.4 11.5' fill='none' stroke='%23c4682e' stroke-width='3.5' stroke-linecap='round'/><circle cx='22.4' cy='11.5' r='2.2' fill='%23c4682e'/></svg>">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <style>
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,7 +22,14 @@
   --text-dim:      oklch(55%   0.009 48);
   --text-faint:    oklch(36%   0.009 40);
 
-  --safe-kill:     oklch(62%   0.22  22);
+  --safe-kill:        oklch(62%   0.22  22);
+  --safe-kill-text:   oklch(97%   0.006 22);
+  --safe-kill-hover:  oklch(66%   0.22  22);
+  --kbd-bg:           oklch(55%   0.22  22 / 0.35);
+  --kbd-text:         oklch(92%   0.006 22);
+  --kbd-border:       oklch(52%   0.20  22 / 0.40);
+  --shadow-toast:     oklch(8%   0.010  32 / 0.35);
+
   --auto-restart:  oklch(74%   0.17  55);
   --system:        oklch(68%   0.18 145);
   --neutral:       oklch(52%   0.009 42);
@@ -51,7 +56,14 @@
   --text-dim:      oklch(50%   0.008 45);
   --text-faint:    oklch(70%   0.007 68);
 
-  --safe-kill:     oklch(48%   0.22  22);
+  --safe-kill:        oklch(48%   0.22  22);
+  --safe-kill-text:   oklch(99%   0.003 22);
+  --safe-kill-hover:  oklch(52%   0.22  22);
+  --kbd-bg:           oklch(42%   0.22  22 / 0.22);
+  --kbd-text:         oklch(98%   0.003 22);
+  --kbd-border:       oklch(40%   0.20  22 / 0.32);
+  --shadow-toast:     oklch(12%   0.008 60 / 0.18);
+
   --auto-restart:  oklch(52%   0.18  55);
   --system:        oklch(42%   0.18 145);
   --neutral:       oklch(46%   0.007 42);
@@ -83,6 +95,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+/* Screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ── Header card ── */
@@ -122,7 +147,6 @@ header {
   height: 240px;
 }
 
-/* Ambient pressure glow — CSS radial, behind the gauge canvas */
 .pressure-glow {
   position: absolute;
   inset: -20px;
@@ -134,15 +158,13 @@ header {
 
 .pressure-glow.warn {
   background: radial-gradient(circle at 50% 58%,
-    oklch(74% 0.17 55 / 0.20) 0%,
-    transparent 68%);
+    oklch(74% 0.17 55 / 0.20) 0%, transparent 68%);
   opacity: 1;
 }
 
 .pressure-glow.critical {
   background: radial-gradient(circle at 50% 58%,
-    oklch(62% 0.22 22 / 0.28) 0%,
-    transparent 65%);
+    oklch(62% 0.22 22 / 0.28) 0%, transparent 65%);
   opacity: 1;
 }
 
@@ -210,7 +232,6 @@ header {
   color: var(--text-dim);
 }
 
-/* Hero Used */
 .stat-hero-row {
   display: flex;
   align-items: baseline;
@@ -237,7 +258,6 @@ header {
   padding-bottom: 3px;
 }
 
-/* Secondary pair */
 .stat-pair { display: flex; flex-direction: column; gap: 8px; }
 
 .stat-mini { display: flex; align-items: baseline; gap: 6px; }
@@ -269,7 +289,6 @@ header {
   padding-bottom: 1px;
 }
 
-/* Pressure pill */
 .pressure-pill {
   display: inline-flex;
   align-items: center;
@@ -292,11 +311,10 @@ header {
   flex-shrink: 0;
 }
 
-.pressure-normal   { color: var(--system);      background: color-mix(in oklch, var(--system)      12%, transparent); }
-.pressure-warn     { color: var(--auto-restart); background: color-mix(in oklch, var(--auto-restart) 14%, transparent); }
-.pressure-critical { color: var(--safe-kill);    background: color-mix(in oklch, var(--safe-kill)   14%, transparent); }
+.pressure-normal   { color: var(--system);      background: color-mix(in oklch, var(--system)       12%, transparent); }
+.pressure-warn     { color: var(--auto-restart); background: color-mix(in oklch, var(--auto-restart)  14%, transparent); }
+.pressure-critical { color: var(--safe-kill);    background: color-mix(in oklch, var(--safe-kill)    14%, transparent); }
 
-/* Freeable */
 .stat-freeable-row {
   display: flex;
   align-items: baseline;
@@ -337,10 +355,10 @@ header {
   min-width: 148px;
 }
 
-/* Batch kill — solid fill when active */
+/* Batch kill — uses derived tokens; solid fill when active */
 .btn-batch {
   background: var(--safe-kill);
-  color: oklch(97% 0.006 22);
+  color: var(--safe-kill-text);
   border: none;
   padding: 11px 18px;
   border-radius: 9px;
@@ -355,10 +373,11 @@ header {
   justify-content: center;
   gap: 6px;
   width: 100%;
+  min-height: 40px;
 }
 
 .btn-batch:hover:not(:disabled) {
-  background: oklch(66% 0.22 22);
+  background: var(--safe-kill-hover);
 }
 
 .btn-batch:disabled {
@@ -376,9 +395,9 @@ header {
   font-family: var(--font-body);
   font-weight: 700;
   letter-spacing: 0.04em;
-  background: oklch(55% 0.22 22 / 0.35);
-  color: oklch(92% 0.006 22);
-  border: 1px solid oklch(52% 0.20 22 / 0.4);
+  background: var(--kbd-bg);
+  color: var(--kbd-text);
+  border: 1px solid var(--kbd-border);
 }
 
 .btn-batch:disabled kbd {
@@ -387,7 +406,6 @@ header {
   border-color: var(--border);
 }
 
-/* Theme toggle + conn status */
 .header-controls {
   display: flex;
   align-items: center;
@@ -395,10 +413,11 @@ header {
   gap: 8px;
 }
 
+/* Enlarged for comfortable click target */
 .theme-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-dim);
@@ -474,41 +493,20 @@ tbody tr {
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--row-hover); }
 
-/* Safety class: left-edge indicator via inset box-shadow */
-tbody tr[data-safety="safe-to-kill"] td:first-child {
-  box-shadow: inset 2px 0 0 var(--safe-kill);
-}
-tbody tr[data-safety="auto-restart"] td:first-child {
-  box-shadow: inset 2px 0 0 var(--auto-restart);
-}
-tbody tr[data-safety="system"] td:first-child {
-  box-shadow: inset 2px 0 0 var(--border);
-}
+/* Safety left-edge indicator */
+tbody tr[data-safety="safe-to-kill"] td:first-child { box-shadow: inset 2px 0 0 var(--safe-kill); }
+tbody tr[data-safety="auto-restart"]  td:first-child { box-shadow: inset 2px 0 0 var(--auto-restart); }
+tbody tr[data-safety="system"]        td:first-child { box-shadow: inset 2px 0 0 var(--border); }
 
-td {
-  padding: 10px 14px;
-  vertical-align: middle;
-  white-space: nowrap;
-}
+td { padding: 10px 14px; vertical-align: middle; }
 
-.col-name {
-  font-weight: 500;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.col-ram { min-width: 160px; }
-
-.col-meta {
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
+/* Scope white-space: nowrap to columns that need it */
+.col-name    { white-space: nowrap; font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.col-ram     { min-width: 160px; white-space: nowrap; }
+.col-meta    { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 12px; white-space: nowrap; }
+.col-actions { min-width: 160px; white-space: nowrap; }
 
 .meta-sep { margin: 0 4px; color: var(--text-faint); }
-
-.col-actions { min-width: 160px; }
 
 /* RAM bar */
 .ram-bar-wrap { display: flex; align-items: center; gap: 8px; }
@@ -553,11 +551,12 @@ td {
 .badge-restart { background: color-mix(in oklch, var(--auto-restart) 14%, transparent); color: var(--auto-restart); }
 .badge-system  { background: color-mix(in oklch, var(--neutral)      14%, transparent); color: var(--neutral); }
 
-/* Action buttons */
+/* Action buttons — min-height for comfortable touch/click targets */
 .btn {
   display: inline-flex;
   align-items: center;
-  padding: 4px 11px;
+  padding: 5px 11px;
+  min-height: 32px;
   border-radius: 6px;
   border: 1px solid transparent;
   font-family: var(--font-display);
@@ -600,14 +599,13 @@ td {
   color: var(--text-dim);
 }
 
-/* Kill flash */
 @keyframes row-flash {
   0%, 100% { background: transparent; }
   35%       { background: color-mix(in oklch, var(--safe-kill) 10%, transparent); }
 }
 .row-flash { animation: row-flash 320ms ease; }
 
-/* ── Toast — top-right ── */
+/* ── Toast — top-right — uses token shadow ── */
 #toast-container {
   position: fixed;
   top: 20px;
@@ -627,7 +625,77 @@ td {
   font-family: var(--font-display);
   font-size: 12px;
   color: var(--text);
-  box-shadow: 0 4px 24px oklch(0% 0 0 / 0.35);
+  box-shadow: 0 4px 24px var(--shadow-toast);
+}
+
+/* ── Responsive: narrow viewports ── */
+@media (max-width: 900px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .gauge-block {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .gauge-wrap {
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+  }
+
+  /* CSS-scale the 240px canvas to 140px — one compositor-friendly transform */
+  #gauge-canvas {
+    width: 140px !important;
+    height: 140px !important;
+  }
+
+  #gauge-pct { font-size: 23px; }
+  .gauge-unit { font-size: 7px; }
+
+  .stats-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 0;
+    width: 100%;
+  }
+
+  .stat-section {
+    padding: 0 16px 0 0;
+  }
+
+  .stat-section + .stat-section {
+    border-left: none;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+  }
+
+  .stat-section:nth-child(3) {
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .stat-section:nth-child(4) {
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-left: 16px;
+  }
+
+  .header-right {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .stat-hero-num { font-size: 34px; }
+  .stat-mini-val { font-size: 18px; }
+  .stat-freeable-num { font-size: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -718,11 +786,11 @@ td {
     <table>
       <thead>
         <tr>
-          <th>Process</th>
-          <th>RAM</th>
-          <th>Meta</th>
-          <th>Status</th>
-          <th>Actions</th>
+          <th scope="col">Process</th>
+          <th scope="col">RAM</th>
+          <th scope="col">Meta</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody id="proc-body" aria-live="polite" aria-label="Running processes">
@@ -736,9 +804,12 @@ td {
 
 <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
 
+<!-- Scripts at end of body: HTML parses without blocking ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
 // ── Theme ──────────────────────────────────────────────────────────────────
-const html       = document.documentElement;
+const html        = document.documentElement;
 const gaugeCanvas = document.getElementById('gauge-canvas');
 
 const MOON = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
@@ -750,34 +821,39 @@ const SUN  = `<circle cx="12" cy="12" r="5"/>
   <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
   <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
 
-function cssColorToHex(varName) {
-  const el = document.createElement('div');
-  el.style.cssText = `color:var(${varName});position:absolute;visibility:hidden;pointer-events:none`;
-  document.body.appendChild(el);
-  const rgb = getComputedStyle(el).color;
-  document.body.removeChild(el);
-  const m = rgb.match(/\d+/g);
-  if (!m || m.length < 3) return 0x888888;
-  return (parseInt(m[0]) << 16) | (parseInt(m[1]) << 8) | parseInt(m[2]);
-}
-
-function buildPalette() {
-  return {
-    active:     cssColorToHex('--active'),
-    wired:      cssColorToHex('--wired'),
-    compressed: cssColorToHex('--compressed'),
-    free:       cssColorToHex('--free'),
-    track:      cssColorToHex('--track'),
-  };
-}
-
-let gaugeReady    = false;
+// Hoisted so applyTheme (called immediately by initTheme) can reference it safely
+let fillLight = null;
+let gaugeReady = false;
 let currentPalette = null;
+
+// Batch 5 CSS var reads under one parent — one forced reflow instead of five
+function buildPalette() {
+  const keys = ['active', 'wired', 'compressed', 'free', 'track'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+  keys.forEach(k => {
+    const el = document.createElement('span');
+    el.style.color = `var(--${k})`;
+    container.appendChild(el);
+  });
+  document.body.appendChild(container);
+  const palette = {};
+  keys.forEach((k, i) => {
+    const rgb = getComputedStyle(container.children[i]).color;
+    const m   = rgb.match(/\d+/g);
+    palette[k] = (!m || m.length < 3) ? 0x888888 :
+      (parseInt(m[0]) << 16) | (parseInt(m[1]) << 8) | parseInt(m[2]);
+  });
+  document.body.removeChild(container);
+  return palette;
+}
 
 function applyTheme(theme) {
   html.setAttribute('data-theme', theme);
   document.getElementById('theme-icon').innerHTML = theme === 'dark' ? MOON : SUN;
   localStorage.setItem('rw-theme', theme);
+  // Adapt fill light warmth to theme temperature (warm light for warm-cream, cool for charcoal)
+  if (fillLight) fillLight.color.setHex(theme === 'dark' ? 0x88aaff : 0xffcc88);
   if (gaugeReady) {
     currentPalette = buildPalette();
     if (trackMesh) trackMesh.material.color.setHex(currentPalette.track);
@@ -787,7 +863,7 @@ function applyTheme(theme) {
 
 function toggleTheme() {
   const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  gsap.fromTo('#theme-btn', { scale: 0.88 }, { scale: 1, duration: 0.32, ease: 'back.out(2)' });
+  gsap.fromTo('#theme-btn', { scale: 0.88 }, { scale: 1, duration: 0.32, ease: 'power3.out' });
   applyTheme(next);
 }
 
@@ -810,7 +886,8 @@ scene.add(new THREE.AmbientLight(0xffffff, 0.62));
 const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
 keyLight.position.set(2, 4, 6);
 scene.add(keyLight);
-const fillLight = new THREE.DirectionalLight(0x88aaff, 0.32);
+// Warm fill for dark (charcoal) theme; applyTheme switches to warm-amber for light
+fillLight = new THREE.DirectionalLight(0x88aaff, 0.32);
 fillLight.position.set(-3, -2, 4);
 scene.add(fillLight);
 
@@ -848,7 +925,11 @@ function makeArc(hexColor, a0, a1) {
 }
 
 function initTrack(pal) {
-  if (trackMesh) scene.remove(trackMesh);
+  if (trackMesh) {
+    trackMesh.geometry.dispose();
+    trackMesh.material.dispose();
+    scene.remove(trackMesh);
+  }
   const geo = new THREE.ShapeGeometry(arcShape(IR - 0.004, OR + 0.004, START, START + RANGE), 72);
   const mat = new THREE.MeshBasicMaterial({ color: pal.track, side: THREE.DoubleSide });
   trackMesh = new THREE.Mesh(geo, mat);
@@ -857,7 +938,10 @@ function initTrack(pal) {
 }
 
 function rebuildGauge(d, pal) {
-  Object.values(arcs).forEach(m => m && scene.remove(m));
+  // Dispose GPU resources before removing meshes to prevent memory leak
+  Object.values(arcs).forEach(m => {
+    if (m) { m.geometry.dispose(); m.material.dispose(); scene.remove(m); }
+  });
   const total = d.total || 1;
   let cursor = START;
   for (const [key, gb] of [['active', d.active], ['wired', d.wired], ['compressed', d.compressed], ['free', d.free]]) {
@@ -875,6 +959,10 @@ initTrack(currentPalette);
 gaugeReady = true;
 rebuildGauge(gaugeData, currentPalette);
 
+// Sync fill light with theme that was applied during initTheme (before fillLight existed)
+const currentTheme = html.getAttribute('data-theme');
+fillLight.color.setHex(currentTheme === 'dark' ? 0x88aaff : 0xffcc88);
+
 function animateGauge(next) {
   gsap.to(gaugeData, {
     active: next.active, wired: next.wired,
@@ -888,10 +976,11 @@ function animateGauge(next) {
 let firstLoad     = true;
 let killableProcs = [];
 
-const tbody   = document.getElementById('proc-body');
-const rowMap  = new Map();
-const connDot = document.getElementById('conn-dot');
-const connLbl = document.getElementById('conn-label');
+const tbody    = document.getElementById('proc-body');
+const rowMap   = new Map(); // pid → <tr>
+const rowDataMap = new Map(); // pid → 'name|safetyClass' for change detection
+const connDot  = document.getElementById('conn-dot');
+const connLbl  = document.getElementById('conn-label');
 
 function setConnState(state) {
   connDot.className = 'conn-dot' + (state === 'warn' ? ' warn' : state === 'error' ? ' error' : '');
@@ -943,9 +1032,7 @@ function updateHeader(data) {
     pStr.includes('critical') ? 'pressure-critical' :
     pStr.includes('warn')     ? 'pressure-warn'     : 'pressure-normal');
 
-  // Ambient pressure glow on gauge
-  const glowEl = document.getElementById('pressure-glow');
-  glowEl.className = 'pressure-glow' + (
+  document.getElementById('pressure-glow').className = 'pressure-glow' + (
     pStr.includes('critical') ? ' critical' :
     pStr.includes('warn')     ? ' warn'     : '');
 
@@ -974,7 +1061,8 @@ function updateHeader(data) {
 // ── Table ────────────────────────────────────────────────────────────────────
 function badgeFor(sc) {
   if (sc === 'safe-to-kill') return '<span class="badge badge-safe">Safe</span>';
-  if (sc === 'auto-restart') return '<span class="badge badge-restart" title="Claude will restart this automatically">Auto-restart</span>';
+  // sr-only carries tooltip text reliably to screen readers instead of title attr
+  if (sc === 'auto-restart') return '<span class="badge badge-restart">Auto-restart<span class="sr-only"> — Claude restarts this process automatically</span></span>';
   return '<span class="badge badge-system">System</span>';
 }
 
@@ -985,6 +1073,22 @@ function actionsFor(p) {
   if (isChroma)
     h += `<button class="btn btn-restart" onclick="restartChroma(${p.pid},this)" aria-label="Restart ChromaDB">Restart</button>`;
   return h;
+}
+
+function buildRowHTML(p, barPct) {
+  return `
+    <td class="col-name" title="${esc(p.command || p.name)}">${esc(p.name)}</td>
+    <td class="col-ram">
+      <div class="ram-bar-wrap">
+        <div class="ram-bar-bg"><div class="ram-bar-fill" style="width:${barPct}%"></div></div>
+        <span class="ram-label">${Math.round(p.ram_mb)} MB</span>
+      </div>
+    </td>
+    <td class="col-meta">
+      ${fmtAge(p.age_secs)}<span class="meta-sep">·</span>${p.pid}
+    </td>
+    <td>${badgeFor(p.safety_class)}</td>
+    <td class="col-actions">${actionsFor(p)}</td>`;
 }
 
 function updateTable(procs) {
@@ -1003,6 +1107,7 @@ function updateTable(procs) {
   if (!procs.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No processes found.</td></tr>';
     rowMap.clear();
+    rowDataMap.clear();
     return;
   }
 
@@ -1011,6 +1116,7 @@ function updateTable(procs) {
 
   for (const [pid, tr] of rowMap) {
     if (!seen.has(pid)) {
+      rowDataMap.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -18, duration: 0.26, ease: 'power2.in',
         onComplete: () => { tr.remove(); rowMap.delete(pid); },
@@ -1027,6 +1133,7 @@ function updateTable(procs) {
       tr.dataset.pid = p.pid;
       tbody.appendChild(tr);
       rowMap.set(p.pid, tr);
+      rowDataMap.set(p.pid, null); // force initial full render
       if (firstLoad) {
         tr.style.opacity = '0';
         gsap.to(tr, { opacity: 1, duration: 0.24, delay: idx * 0.02, ease: 'power2.out' });
@@ -1037,22 +1144,21 @@ function updateTable(procs) {
 
     if (tr.dataset.killing) return;
 
-    // Set safety class on tr for CSS left-edge indicator
-    tr.dataset.safety = p.safety_class;
-
-    tr.innerHTML = `
-      <td class="col-name" title="${esc(p.command || p.name)}">${esc(p.name)}</td>
-      <td class="col-ram">
-        <div class="ram-bar-wrap">
-          <div class="ram-bar-bg"><div class="ram-bar-fill" style="width:${barPct}%"></div></div>
-          <span class="ram-label">${Math.round(p.ram_mb)} MB</span>
-        </div>
-      </td>
-      <td class="col-meta">
-        ${fmtAge(p.age_secs)}<span class="meta-sep">·</span>${p.pid}
-      </td>
-      <td>${badgeFor(p.safety_class)}</td>
-      <td class="col-actions">${actionsFor(p)}</td>`;
+    // Only rebuild full innerHTML when structurally significant fields change
+    const key = `${p.name}|${p.safety_class}`;
+    if (rowDataMap.get(p.pid) !== key) {
+      rowDataMap.set(p.pid, key);
+      tr.dataset.safety = p.safety_class;
+      tr.innerHTML = buildRowHTML(p, barPct);
+    } else {
+      // Targeted update of dynamic cells only — avoids DOM churn on every tick
+      const barFill  = tr.querySelector('.ram-bar-fill');
+      const ramLabel = tr.querySelector('.ram-label');
+      const metaCell = tr.querySelector('.col-meta');
+      if (barFill)  barFill.style.width = barPct + '%';
+      if (ramLabel) ramLabel.textContent = Math.round(p.ram_mb) + ' MB';
+      if (metaCell) metaCell.innerHTML = `${fmtAge(p.age_secs)}<span class="meta-sep">·</span>${p.pid}`;
+    }
   });
 
   if (firstLoad) firstLoad = false;
@@ -1078,13 +1184,11 @@ async function killProc(pid, btn) {
                          allRows[currentIdx - 1]?.querySelector('.btn') ||
                          document.getElementById('batch-kill-btn');
 
+      rowDataMap.delete(pid);
       rowMap.delete(pid);
       gsap.to(tr, {
         opacity: 0, x: -20, duration: 0.26, ease: 'power2.in',
-        onComplete: () => {
-          tr.remove();
-          nextFocus?.focus();
-        },
+        onComplete: () => { tr.remove(); nextFocus?.focus(); },
       });
       showToast(`Killed ${name}`);
     } else {
@@ -1147,6 +1251,7 @@ async function batchKill() {
         killed++;
         const tr = rowMap.get(p.pid);
         if (tr) {
+          rowDataMap.delete(p.pid);
           rowMap.delete(p.pid);
           gsap.to(tr, {
             opacity: 0, x: -20, duration: 0.24, ease: 'power2.in',
@@ -1184,24 +1289,24 @@ document.addEventListener('keydown', e => {
   if (e.key === 'f' || e.key === 'F') {
     const btn = document.getElementById('batch-kill-btn');
     if (!btn.disabled) {
-      gsap.fromTo(btn, { scale: 0.95 }, { scale: 1, duration: 0.28, ease: 'back.out(1.4)' });
+      gsap.fromTo(btn, { scale: 0.95 }, { scale: 1, duration: 0.30, ease: 'power3.out' });
       batchKill();
     }
   }
 });
 
-// ── Button press spring ───────────────────────────────────────────────────────
+// ── Button press spring — power3.out: smooth deceleration, no overshoot ──────
 document.addEventListener('mousedown', e => {
   const b = e.target.closest('.btn, .btn-batch, .theme-btn');
   if (b && !b.disabled) gsap.to(b, { scale: 0.93, duration: 0.08 });
 });
 document.addEventListener('mouseup', e => {
   const b = e.target.closest('.btn, .btn-batch, .theme-btn');
-  if (b) gsap.to(b, { scale: 1, duration: 0.28, ease: 'back.out(1.4)' });
+  if (b) gsap.to(b, { scale: 1, duration: 0.30, ease: 'power3.out' });
 });
 
-// ── Reduced motion ────────────────────────────────────────────────────────────
-if (window.matchMedia('(prefers-reduce-motion: reduce)').matches) {
+// ── Reduced motion — correct media query ──────────────────────────────────────
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   gsap.globalTimeline.timeScale(0);
 }
 </script>
