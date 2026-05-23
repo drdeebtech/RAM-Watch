@@ -1,4 +1,8 @@
 #!/bin/bash
-cp "$(dirname "$0")/ram-watch.sh" /opt/homebrew/bin/ram-watch
-chmod +x /opt/homebrew/bin/ram-watch
-echo "Installed. Run: ram-watch"
+set -e
+export PATH="/opt/homebrew/bin:$PATH"
+echo "Building ram-watch..."
+go build -o ram-watch-bin .
+sudo mv ram-watch-bin /opt/homebrew/bin/ram-watch
+echo "Installed to /opt/homebrew/bin/ram-watch"
+echo "Run: ram-watch"
