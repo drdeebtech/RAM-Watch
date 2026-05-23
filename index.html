@@ -1304,48 +1304,57 @@ function updateTable(groups) {
   let memberIdx = 0;
   groups.forEach(g => {
     const expanded = groupExpanded.get(g.name) !== false;
+    const isSolo   = g.members.length === 1;
 
-    // Group header row
-    let groupTr = groupRowMap.get(g.name);
-    if (!groupTr) {
-      groupTr = document.createElement('tr');
-      groupTr.className = 'group-row';
-      groupTr.dataset.groupName = g.name;
-      tbody.appendChild(groupTr);
-      groupRowMap.set(g.name, groupTr);
-      groupDataMap.set(g.name, null);
-      if (firstLoad) {
-        groupTr.style.opacity = '0';
-        gsap.to(groupTr, { opacity: 1, duration: 0.2, ease: 'power2.out' });
+    // ── Solo group: skip group header, render member at top level ────────────
+    if (isSolo) {
+      const existingGroupTr = groupRowMap.get(g.name);
+      if (existingGroupTr) {
+        existingGroupTr.remove();
+        groupRowMap.delete(g.name);
+        groupDataMap.delete(g.name);
       }
     } else {
-      // Re-append to maintain order if group ordering changed
-      tbody.appendChild(groupTr);
-    }
+      // ── Multi-member group: render group header row ────────────────────────
+      let groupTr = groupRowMap.get(g.name);
+      if (!groupTr) {
+        groupTr = document.createElement('tr');
+        groupTr.className = 'group-row';
+        groupTr.dataset.groupName = g.name;
+        tbody.appendChild(groupTr);
+        groupRowMap.set(g.name, groupTr);
+        groupDataMap.set(g.name, null);
+        if (firstLoad) {
+          groupTr.style.opacity = '0';
+          gsap.to(groupTr, { opacity: 1, duration: 0.2, ease: 'power2.out' });
+        }
+      } else {
+        tbody.appendChild(groupTr);
+      }
 
-    // Diff group header content
-    const groupKey = `${Math.round(g.total_mb)}|${g.members.length}|${g.safety_class}|${expanded}`;
-    if (groupDataMap.get(g.name) !== groupKey) {
-      groupDataMap.set(g.name, groupKey);
-      groupTr.dataset.groupSafety = g.safety_class;
-      groupTr.innerHTML = buildGroupRowHTML(g, expanded);
+      const groupKey = `${Math.round(g.total_mb)}|${g.members.length}|${g.safety_class}|${expanded}`;
+      if (groupDataMap.get(g.name) !== groupKey) {
+        groupDataMap.set(g.name, groupKey);
+        groupTr.dataset.groupSafety = g.safety_class;
+        groupTr.innerHTML = buildGroupRowHTML(g, expanded);
+      }
     }
 
     // Member rows
     const maxRAM = g.members.length > 0 ? Math.max(...g.members.map(p => p.ram_mb)) : 1;
     g.members.forEach(p => {
-      procData.set(p.pid, p); // store latest for hover card lookup
+      procData.set(p.pid, p);
       let tr = rowMap.get(p.pid);
       const barPct = Math.min(100, p.ram_mb / maxRAM * 100).toFixed(1);
 
       if (!tr) {
         tr = document.createElement('tr');
         tr.dataset.pid = p.pid;
-        tr.dataset.memberOf = g.name;
+        if (!isSolo) tr.dataset.memberOf = g.name;
         tbody.appendChild(tr);
         rowMap.set(p.pid, tr);
         rowDataMap.set(p.pid, null);
-        if (!expanded) tr.style.display = 'none';
+        if (!isSolo && !expanded) tr.style.display = 'none';
         if (firstLoad) {
           tr.style.opacity = '0';
           gsap.to(tr, { opacity: 1, duration: 0.22, delay: memberIdx * 0.012, ease: 'power2.out' });
@@ -1353,17 +1362,23 @@ function updateTable(groups) {
           gsap.fromTo(tr, { opacity: 0, x: 8 }, { opacity: 1, x: 0, duration: 0.24, ease: 'power2.out' });
         }
       } else {
-        // Re-append in correct order under its group; respect collapse
         tbody.appendChild(tr);
-        tr.style.display = expanded ? '' : 'none';
-        if (tr.dataset.memberOf !== g.name) tr.dataset.memberOf = g.name;
+        // Update solo vs grouped state
+        if (isSolo) {
+          delete tr.dataset.memberOf;
+          tr.style.display = '';
+        } else {
+          if (tr.dataset.memberOf !== g.name) tr.dataset.memberOf = g.name;
+          tr.style.display = expanded ? '' : 'none';
+        }
       }
 
       memberIdx++;
 
       if (tr.dataset.killing) return;
 
-      const key = `${p.name}|${p.safety_class}`;
+      // Include isSolo in diff key so we re-render when nesting state flips
+      const key = `${p.name}|${p.safety_class}|${isSolo ? 'solo' : 'in'}`;
       if (rowDataMap.get(p.pid) !== key) {
         rowDataMap.set(p.pid, key);
         tr.dataset.safety = p.safety_class;
