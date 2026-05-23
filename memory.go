@@ -41,12 +41,13 @@ func ParseMemoryStats(vmstatOutput, hwMemsize string) (MemStats, error) {
 	free := fields["Pages free"]
 
 	usedBytes := float64((active + wired + compressed) * pageSize)
-	freeBytes := float64(free * pageSize)
 	totalGB := float64(totalBytes) / gbBytes
+	usedGB := usedBytes / gbBytes
+	_ = free // Pages free is a tiny subset; available = total − used
 
 	return MemStats{
-		UsedGB:       usedBytes / gbBytes,
-		FreeGB:       freeBytes / gbBytes,
+		UsedGB:       usedGB,
+		FreeGB:       totalGB - usedGB,
 		TotalGB:      totalGB,
 		ActiveGB:     float64(active*pageSize) / gbBytes,
 		WiredGB:      float64(wired*pageSize) / gbBytes,

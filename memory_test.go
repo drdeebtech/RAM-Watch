@@ -66,9 +66,9 @@ func TestParseMemoryStats_FreeGB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Pages free=12800 × 16384 bytes = 209715200 bytes ≈ 0.2 GB
-	// macOS "free" is truly-unused pages only, not total−used
-	want := 0.2
+	// free = total − used = 16.0 − 2.5 = 13.5 GB
+	// (Pages free is a tiny subset; available memory is total − active − wired − compressed)
+	want := 13.5
 	if roundTo1(stats.FreeGB) != want {
 		t.Errorf("FreeGB: want %.1f, got %.1f", want, stats.FreeGB)
 	}
